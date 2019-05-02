@@ -13,8 +13,8 @@ So, you can call the ffmpeg like this :
   - ffmpeg -i INPUT -vcodec mc264 -b:v 2.0M -r 30 -g 15 -acodec ac3 -f mp4 OUTPUT
   - ffmpeg -i INPUT -vcodec mc264 -b:v 2.0M -r 30 -g 15 -acodec aac -b:a 64k -f mp4 OUTPUT
   - - aac : '-b:a 64k' recommended or AV sync problem on my device (LG Q6).
-  - ffmpeg -re -i /sdcard/movie.avi -vcodec mc264 -acodec ac3 -f mpegts udp://192.168.0.12:5555?pkt_size=1316&buffer_size=65535
-  - ffmpeg -i rtsp://192.168.0.10/videodevice -vcodec mc264 -an -f mpegts udp://192.168.0.12:5555?pkt_size=1316&buffer_size=65535
+  - ffmpeg -re -i /sdcard/movie.avi -vcodec mc264 -acodec ac3 -f mpegts udp://192.168.0.12:5555?pkt_size=1316&buffer_size=655360
+  - ffmpeg -i rtsp://192.168.0.10/videodevice -vcodec mc264 -an -f mpegts udp://192.168.0.12:5555?pkt_size=1316
 
   - generate TV test pattern : 
   - ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -r 30 -g 15 -an -f mp4 OUTPUT
