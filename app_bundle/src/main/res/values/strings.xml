@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">FFmpegMC264Kit</string>
+
+    <string name="app1">App1</string>
+    <string name="app2">App2</string>
+
+    <!-- for example1 -->
+    <string name="process">Start</string>
+    <string name="stop_process">Stop</string>
+    <string name="ffmpeg_cmd_pc0">ffmpeg -v 24 -probesize 0.3M -i rtsp://192.168.123.181/videodevice -vcodec mc264 -b:v 2.0M -r 30 -g 15 -an -max_muxing_queue_size 400 -f flv rtmp://192.168.123.181/show/stream2</string>
+    <string name="ffmpeg_cmd_pc1">ffmpeg -v 24 -probesize 0.3M -i rtsp://192.168.123.181/videodevice -vcodec mc264 -b:v 2.0M -r 30 -g 15 -an -max_muxing_queue_size 400 -f mpegts udp://192.168.123.181:5555?pkt_size=1316</string>
+    <string name="title_activity_main3">Main3Activity</string>
+
+
+</resources>
