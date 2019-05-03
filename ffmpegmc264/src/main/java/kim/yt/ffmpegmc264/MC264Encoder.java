@@ -24,6 +24,7 @@ import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Surface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -50,8 +51,14 @@ public class MC264Encoder {
 
 
     private static final String TAG = "MC264Encoder";
-    private final boolean VERBOSE = false;
+    private final boolean VERBOSE = true;
     private final boolean VERBOSE_DUMP = false;
+
+    //for MediaProjection
+    private boolean mEnableScreenGrabber = false;
+    private Surface mEncoderSurface;
+    private long firstInfopresentationTimeUs = 0;
+
 
 //    private static final boolean DEBUG_SAVE_FILE = false;   // save copy of encoded movie
 //    private static final String DEBUG_FILE_NAME_BASE = "/sdcard/testencode.h264stream.raw.";
@@ -269,6 +276,9 @@ public class MC264Encoder {
         boolean deviceIsSemiPlanar = isSemiPlanarYUV(mEncoderColorFormat);
         Log.d(TAG, "mEncoderColorFormat - after selectColorFormat() : device isSemiPlanarYUV = " + deviceIsSemiPlanar );
 
+        if( mEnableScreenGrabber )
+            mEncoderColorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface; //to test MediaProjection
+
         MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", mWidth, mHeight);
         mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, mWidth * mHeight * 3 / 2);
         mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, mBitRate);
@@ -291,6 +301,8 @@ public class MC264Encoder {
         printCodecProfileLevel(codecInfo, "video/avc");
 
         encoder.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        if( mEnableScreenGrabber )
+            mEncoderSurface = encoder.createInputSurface();
         encoder.start();  //moved into setParameter();
 
         encoderInputBuffers = encoder.getInputBuffers();
@@ -318,32 +330,34 @@ public class MC264Encoder {
         /*
          * feed frame data
          */
-        int inputBufIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC);
-        if (inputBufIndex >= 0) {
-            //long ptsUsec = computePresentationTime(mFrameIndex++);
-            long ptsUsec = computePresentationTime(pts);
+        if( !mEnableScreenGrabber ) {
+            int inputBufIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC);
+            if (inputBufIndex >= 0) {
+                //long ptsUsec = computePresentationTime(mFrameIndex++);
+                long ptsUsec = computePresentationTime(pts);
 
-            if (flushOnly) {
-                encoder.queueInputBuffer(inputBufIndex, 0, 0, ptsUsec,
-                        MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                return;
-            }
+                if (flushOnly) {
+                    encoder.queueInputBuffer(inputBufIndex, 0, 0, ptsUsec,
+                            MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                    return;
+                }
 
-            ByteBuffer inputBuf;
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                /*ByteBuffer*/ inputBuf = encoder.getInputBuffer(inputBufIndex);
+                ByteBuffer inputBuf;
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    /*ByteBuffer*/ inputBuf = encoder.getInputBuffer(inputBufIndex);
+                } else {
+                    /*ByteBuffer*/ inputBuf = encoderInputBuffers[inputBufIndex];
+                }
+
+                inputBuf.clear();
+                inputBuf.put(frameData);
+                encoder.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
+                if (VERBOSE) Log.d(TAG, "submitted frame to enc (length=" + frameData.length + ")");
             } else {
-                /*ByteBuffer*/ inputBuf = encoderInputBuffers[inputBufIndex];
+                // either all in use, or we timed out during initial setup
+                //if (VERBOSE)
+                Log.d(TAG, "input buffer not available. drop input frame...");
             }
-
-            inputBuf.clear();
-            inputBuf.put(frameData);
-            encoder.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
-            if (VERBOSE) Log.d(TAG, "submitted frame to enc (length=" + frameData.length + ")");
-        } else {
-            // either all in use, or we timed out during initial setup
-            //if (VERBOSE)
-            Log.d(TAG, "input buffer not available. drop input frame...");
         }
 
         /*
@@ -416,6 +430,15 @@ public class MC264Encoder {
                          if (VERBOSE)
                             Log.d(TAG, "info.presentationTimeUs = " + info.presentationTimeUs + " b_keyframe = " + b_keyframe);
 
+                         //for MediaProjection
+                        long curPTS = 0;
+                        if( mEnableScreenGrabber ) {
+                            if (firstInfopresentationTimeUs == 0) {
+                                firstInfopresentationTimeUs = info.presentationTimeUs;
+                            }
+                            /*long*/ curPTS = ((info.presentationTimeUs - firstInfopresentationTimeUs));
+                        }
+
                         if (b_keyframe == 1) {
                             packageH264Keyframe(encodedData, info);
 //                            byte[] data = new byte[mH264MetaSize + info.size];
@@ -424,8 +447,12 @@ public class MC264Encoder {
 //                            dump(data, "keyframe");
 //                            onH264MediaCodecEncodedFrame(data, /*info.presentationTimeUs*/mEncodedIndex++, /*b_keyframe*/1);
 
-                            //onH264MediaCodecEncodedFrame2(mH264Keyframe, mH264MetaSize + info.size, /*info.presentationTimeUs*/mEncodedIndex++, /*b_keyframe*/1);
-                            onH264MediaCodecEncodedFrame2(mH264Keyframe, mH264MetaSize + info.size, info.presentationTimeUs /*mEncodedIndex++*/, /*b_keyframe*/1);
+                            if (mEnableScreenGrabber) {
+                                onH264MediaCodecEncodedFrame2(mH264Keyframe, mH264MetaSize + info.size, curPTS /*mEncodedIndex++*/, /*b_keyframe*/1);
+                            } else {
+                                //onH264MediaCodecEncodedFrame2(mH264Keyframe, mH264MetaSize + info.size, /*info.presentationTimeUs*/mEncodedIndex++, /*b_keyframe*/1);
+                                onH264MediaCodecEncodedFrame2(mH264Keyframe, mH264MetaSize + info.size, info.presentationTimeUs /*mEncodedIndex++*/, /*b_keyframe*/1);
+                            }
 
                             if( mYUVFrameListener != null ) {
                                 mYUVFrameListener.onYUVFrame( frameData, (mStride > 0) ? mStride : mWidth, mHeight );
@@ -437,8 +464,12 @@ public class MC264Encoder {
 //                            dump(data, "non keyframe");
 //                            onH264MediaCodecEncodedFrame(data, /*info.presentationTimeUs*/mEncodedIndex++, /*b_keyframe*/0);
 
-                            //onH264MediaCodecEncodedFrame2(encodedData, info.size, /*info.presentationTimeUs*/mEncodedIndex++, /*b_keyframe*/0);
-                            onH264MediaCodecEncodedFrame2(encodedData, info.size, info.presentationTimeUs /*mEncodedIndex++*/, /*b_keyframe*/0);
+                            if (mEnableScreenGrabber) {
+                                onH264MediaCodecEncodedFrame2(encodedData, info.size, curPTS /*mEncodedIndex++*/, /*b_keyframe*/0);
+                            } else {
+                                //onH264MediaCodecEncodedFrame2(encodedData, info.size, /*info.presentationTimeUs*/mEncodedIndex++, /*b_keyframe*/0);
+                                onH264MediaCodecEncodedFrame2(encodedData, info.size, info.presentationTimeUs /*mEncodedIndex++*/, /*b_keyframe*/0);
+                            }
 
                             if( (mYUVFrameListener != null) && !mYUVFrameListenerKeyFrameOnly ) {
                                 mYUVFrameListener.onYUVFrame( frameData, (mStride > 0) ? mStride : mWidth, mHeight );
@@ -485,6 +516,14 @@ public class MC264Encoder {
             }
             Log.d(TAG, tag + " : data[" + data.length + "] = " + str);
         }
+    }
+
+    public void enableScreenGrabber( boolean enable ) {
+        mEnableScreenGrabber = enable;
+    }
+
+    public Surface getEncoderSurface() {
+        return mEncoderSurface;
     }
 
     public boolean isEncodeDone() {

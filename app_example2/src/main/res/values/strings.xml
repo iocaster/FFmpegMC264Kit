@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">FFmpegMC264KitApp2</string>
+
+    <string name="screen_sharing_toggle">Toggle screen sharing</string>
+    <string name="cap_dst_ussage1">-y /sdcard/capture.mp4</string>
+    <string name="cap_dst_ussage2">-f mpegts udp://192.168.123.123:5555?pkt_size=1316&amp;buffer_size=655360</string>
 </resources>
