@@ -8,27 +8,22 @@ package com.example.appexample2;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.AsyncTask;
-import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -46,12 +41,17 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG = "MediaProjectionDemo";
     private static final int PERMISSION_CODE = 1;
     private static final List<Resolution> RESOLUTIONS = new ArrayList<Resolution>() {{
-        add(new Resolution(1366,768));
-        add(new Resolution(960,540));
-        add(new Resolution(1600,900));
-        add(new Resolution(720,360));
-        add(new Resolution(640,360));
+        add(new Resolution(1366,1024));
+        add(new Resolution(1600,1200));
+        //add(new Resolution(1920,1440));
+        add(new Resolution(960,720));
+        add(new Resolution(720,540));
         add(new Resolution(320,240));
+        add(new Resolution(1366,768));
+        add(new Resolution(1600,900));
+        //add(new Resolution(1920,1080));
+        add(new Resolution(960,540));
+        add(new Resolution(720,405));
     }};
     private int mScreenDensity;
     private MediaProjectionManager mProjectionManager;
@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity
 //    private ToggleButton mToggle;
 
     private Button btnStart, btnStop, btnHide;
+    private CheckBox chkVideoMode;
     private EditText capDst;
 
     private MyTask ffmpeg_task = null;
@@ -104,7 +105,19 @@ public class MainActivity extends AppCompatActivity
         btnStart = findViewById(R.id.button_start);
         btnStop = findViewById(R.id.button_stop);
         btnHide = findViewById(R.id.button_hide);
+        chkVideoMode = findViewById(R.id.checkBox_VideoMode);
         capDst = findViewById(R.id.editText_capDst);
+
+        chkVideoMode.setOnClickListener(new CheckBox.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                Spinner s = (Spinner) findViewById(R.id.spinner);
+//                s.setSelection(0);
+                int w = mDisplayWidth;
+                mDisplayWidth = mDisplayHeight;
+                mDisplayHeight = w;
+            }
+        }) ;
 
         String defaultDst = getResources().getString(R.string.cap_dst_ussage2);
         String savedDst = PreferenceManager.getDefaultSharedPreferences(this).getString("dst", defaultDst);
@@ -146,8 +159,25 @@ public class MainActivity extends AppCompatActivity
 //                + mDisplayWidth + "x" + mDisplayHeight + " -an -f mpegts udp://192.168.123.123:5555?pkt_size=1316&buffer_size=655360" );
 
         String capDstStr = new String("") + capDst.getText();
-        String fullUrl = new String("ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -s "
-                + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr );
+
+        /*
+        Rotate 90 clockwise:
+            ffmpeg -i in.mov -vf "transpose=1" out.mov
+            0 = 90CounterCLockwise and Vertical Flip (default)
+            1 = 90Clockwise
+            2 = 90CounterClockwise
+            3 = 90Clockwise and Vertical Flip
+         */
+        String fullUrl;
+        if( chkVideoMode.isChecked() ) {
+            fullUrl = new String("ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -s "
+                    + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr );
+        } else { //rotate for HomeScreen Mode
+            fullUrl = new String("ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vf transpose=1 -vcodec mc264 -b:v 2.0M -s "
+                    + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr);
+        }
+
+        //Log.d( TAG, "URL = " + fullUrl );
 
         String[] sArrays = fullUrl.split("\\s+");   //+ : to remove duplicate whitespace
 
@@ -234,13 +264,17 @@ public class MainActivity extends AppCompatActivity
         public void onItemSelected(AdapterView<?> parent, View v, int pos, long id) {
             Resolution r = (Resolution) parent.getItemAtPosition(pos);
 //            ViewGroup.LayoutParams lp = mSurfaceView.getLayoutParams();
-            if (getResources().getConfiguration().orientation
-                    == Configuration.ORIENTATION_LANDSCAPE) {
+//            if (getResources().getConfiguration().orientation
+//                    == Configuration.ORIENTATION_LANDSCAPE)
+            if( chkVideoMode.isChecked() )  //wide mode
+            {
                 mDisplayHeight = r.y;
                 mDisplayWidth = r.x;
-            } else {
+                Log.d( TAG, "---> onItemSelected() : chkVideoMode.isChecked() == true, WxH = " + mDisplayWidth + "x" + mDisplayHeight);
+            } else {                        //narrow mode & ffmpeg should rotate the screen
                 mDisplayHeight = r.x;
                 mDisplayWidth = r.y;
+                Log.d( TAG, "---> onItemSelected() : chkVideoMode.isChecked() == false , WxH = " + mDisplayWidth + "x" + mDisplayHeight);
             }
 //            lp.height = mDisplayHeight;
 //            lp.width = mDisplayWidth;
