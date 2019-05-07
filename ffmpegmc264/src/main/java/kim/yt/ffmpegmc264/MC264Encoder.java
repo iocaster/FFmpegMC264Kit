@@ -759,8 +759,8 @@ public class MC264Encoder {
      * Generates the presentation time for frame N, in microseconds.
      */
     private long computePresentationTime(long frameIndex) {
-        //return 132 + frameIndex * 1000000 / (long) mFrameRate;    //for old style sync mc264.c : pkt->pts = (int64_t)( (double)presentationTimeUs / (double)(1000000/(double)myCtx->fps) );
-        return  frameIndex * 1000000 / (long) mFrameRate;          //for new style sync mc264.c : pkt->pts = av_rescale_q( presentationTimeUs, bq, cq ) / (90000/(int)myCtx->fps);
+        return 132 + frameIndex * 1000000 / (long) mFrameRate;    //for old style sync mc264.c : pkt->pts = (int64_t)( (double)presentationTimeUs / (double)(1000000/(double)myCtx->fps) );
+        //return  frameIndex * 1000000 / (long) mFrameRate;          //for new style sync mc264.c : pkt->pts = av_rescale_q( presentationTimeUs, bq, cq ) / (90000/(int)myCtx->fps);
     }
 
 }
