@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private void app2Clicked(View ignored) {
 
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName("com.example.appexample2", "com.example.appexample2.MainActivity"));
+        intent.setComponent(new ComponentName("com.example.appexample2", "com.example.appexample2.MainActivity2"));
         startActivity(intent);
 
 //        Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.example.appexample2");

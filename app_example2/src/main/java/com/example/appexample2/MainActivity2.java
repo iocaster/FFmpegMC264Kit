@@ -1,0 +1,163 @@
+/*
+ * This source code is based on these pages :
+ *  https://android.googlesource.com/platform/development/+/master/samples/ApiDemos/src/com/example/android/apis/media/projection/MediaProjectionDemo.java
+ *  https://android.googlesource.com/platform/development/+/master/samples/ApiDemos
+ */
+package com.example.appexample2;
+
+import android.Manifest;
+import android.content.Intent;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.Spinner;
+import java.util.ArrayList;
+import java.util.List;
+
+import kim.yt.ffmpegmc264.MC264ScreenRecorder;
+
+public class MainActivity2 extends AppCompatActivity
+{
+    private static final String TAG = "MC264ScreenRecorderDemo";
+    //private static final int PERMISSION_CODE = 1;
+    private static final List<Resolution> RESOLUTIONS = new ArrayList<Resolution>() {{
+        //4:3
+        add(new Resolution(1366,1024));
+        add(new Resolution(1600,1200));
+        //add(new Resolution(1920,1440));   //too big size
+        add(new Resolution(960,720));
+        add(new Resolution(720,540));
+        add(new Resolution(320,240));
+        //16:9
+        add(new Resolution(1366,768));
+        add(new Resolution(1600,900));
+        //add(new Resolution(1920,1080));
+        add(new Resolution(960,540));
+        add(new Resolution(720,405));
+    }};
+
+    private int mDisplayWidth;
+    private int mDisplayHeight;
+
+    private Button btnStart, btnStop, btnHide;
+    private CheckBox chkVideoMode;
+    private EditText capDst;
+
+    private static MC264ScreenRecorder mMC264Recorder;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "---> onCreate() ..." );
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.media_projection);
+
+        /*
+         * request an android permission : WRITE_EXTERNAL_STORAGE
+         * It is required when to save the ffmpeg output into a file.
+         */
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                1337);
+
+        ArrayAdapter<Resolution> arrayAdapter = new ArrayAdapter<Resolution>(
+                this, android.R.layout.simple_list_item_1, RESOLUTIONS);
+        Spinner s = (Spinner) findViewById(R.id.spinner);
+        s.setAdapter(arrayAdapter);
+        s.setOnItemSelectedListener(new ResolutionSelector());
+        s.setSelection(0);
+
+        btnStart = findViewById(R.id.button_start);
+        btnStop = findViewById(R.id.button_stop);
+        btnHide = findViewById(R.id.button_hide);
+        chkVideoMode = findViewById(R.id.checkBox_VideoMode);
+        capDst = findViewById(R.id.editText_capDst);
+
+        String defaultDst = getResources().getString(R.string.cap_dst_ussage2);
+        String savedDst = PreferenceManager.getDefaultSharedPreferences(this).getString("dst", defaultDst);
+        capDst.setText( savedDst );
+
+        mMC264Recorder = new MC264ScreenRecorder();
+        mMC264Recorder.init( this );
+
+    }
+
+//    @Override
+//    protected void onStop() {
+//        Log.d(TAG, "---> onStop() ..." );
+//        super.onStop();
+//    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "---> onDestroy() ..." );
+        mMC264Recorder.release();
+    }
+
+    private void saveDst( String dstStr ) {
+        PreferenceManager.getDefaultSharedPreferences(this).edit().putString("dst", dstStr ).apply();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "---> onActivityResult() ..." );
+        mMC264Recorder.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private class ResolutionSelector implements Spinner.OnItemSelectedListener {
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View v, int pos, long id) {
+            Resolution r = (Resolution) parent.getItemAtPosition(pos);
+            mDisplayHeight = r.y;
+            mDisplayWidth = r.x;
+        }
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) { /* Ignore */ }
+    }
+
+    private static class Resolution {
+        int x;
+        int y;
+        public Resolution(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+        @Override
+        public String toString() {
+            return x + "x" + y;
+        }
+    }
+
+    public void onBtnStart(View view) {
+        String capDstStr = new String("") + capDst.getText();
+        saveDst(capDstStr);
+
+        mMC264Recorder.setCaptureSize( mDisplayWidth, mDisplayHeight );
+        mMC264Recorder.setDst(capDstStr);
+        if( chkVideoMode.isChecked() )
+            mMC264Recorder.setLandscapeMode( true );
+        else
+            mMC264Recorder.setLandscapeMode( false );
+        mMC264Recorder.start();
+    }
+
+    public void onBtnStop(View view) {
+        mMC264Recorder.stop();
+    }
+
+    public void onBtnHide(View view) {
+        //send this app to background
+        Intent i = new Intent();
+        i.setAction(Intent.ACTION_MAIN);
+        i.addCategory(Intent.CATEGORY_HOME);
+        this.startActivity(i);
+    }
+}
