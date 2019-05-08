@@ -139,17 +139,26 @@ public class MC264ScreenRecorder
         ffmpeg_task.execute( sArrays );
     }
 
+    private void callCallback( int retcode ) {
+        if( this.mCallback != null )
+            this.mCallback.onStop(retcode);
+    }
+
     //@Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG, "---> onActivityResult() ..." );
         if (requestCode != PERMISSION_CODE) {
             Log.e(TAG, "onActivityResult() : Unknown request code: " + requestCode);
+            //callCallback(-1);
+            stopCapture();      //stop ffmpeg
             return;
         }
         if (resultCode != RESULT_OK) {
 //            Toast.makeText(mActivity,
 //                    "User denied screen sharing permission", Toast.LENGTH_SHORT).show();
             Log.e(TAG,"onActivityResult() : User denied screen sharing permission");
+            //callCallback(-1);
+            stopCapture();      //stop ffmpeg
             return;
         }
         mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
@@ -260,10 +269,12 @@ public class MC264ScreenRecorder
     public void start() {
         if( mDisplayWidth <= 0 || mDisplayHeight <= 0 ) {
             Log.e(TAG, "Error, Capture size isn't set yet !!!");
+            callCallback(-1);
             return;
         }
         if( mDstUrl == null ) {
             Log.e(TAG, "Error, Capture DST isn't set yet, where record or stream to !!!");
+            callCallback(-1);
             return;
         }
 

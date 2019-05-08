@@ -73,6 +73,7 @@ public class MainActivity2 extends AppCompatActivity
                 Toast.makeText(mCtx,
                         "Error finished : retcode = " + retcode, Toast.LENGTH_LONG).show();
             }
+            btnStart.setEnabled(true);
         }
     }
 
@@ -184,6 +185,8 @@ public class MainActivity2 extends AppCompatActivity
         else
             mMC264Recorder.setLandscapeMode( false );
         mMC264Recorder.start();
+
+        btnStart.setEnabled(false);
     }
 
     public void onBtnStop(View view) {
