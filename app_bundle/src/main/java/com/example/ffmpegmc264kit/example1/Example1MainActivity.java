@@ -60,7 +60,7 @@ public class Example1MainActivity extends AppCompatActivity
      * To draw a progress monitor view with YUVFrame
      */
     private static ImageView monitorView;
-    private static ArrayList mFrameList = new ArrayList();
+    private static ArrayList mFrameList = new ArrayList<byte[]>();
     private static int mWidth, mHeight;
     private static Handler mHandler = new Handler() {
         @Override

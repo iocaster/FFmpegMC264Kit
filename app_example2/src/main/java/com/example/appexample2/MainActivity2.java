@@ -7,11 +7,13 @@ package com.example.appexample2;
 
 import android.Manifest;
 import android.content.Intent;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -30,16 +32,17 @@ public class MainActivity2 extends AppCompatActivity
     //private static final int PERMISSION_CODE = 1;
     private static final List<Resolution> RESOLUTIONS = new ArrayList<Resolution>() {{
         //4:3
+        //add(new Resolution(1920,1440));       //too big size : instead use 1440 x 1080
+        add(new Resolution(1440,1080));
         add(new Resolution(1366,1024));
         add(new Resolution(1600,1200));
-        //add(new Resolution(1920,1440));   //too big size
         add(new Resolution(960,720));
         add(new Resolution(720,540));
         add(new Resolution(320,240));
         //16:9
+        add(new Resolution(1920,1080));
         add(new Resolution(1366,768));
         add(new Resolution(1600,900));
-        //add(new Resolution(1920,1080));
         add(new Resolution(960,540));
         add(new Resolution(720,405));
     }};
@@ -67,6 +70,7 @@ public class MainActivity2 extends AppCompatActivity
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 1337);
 
+        //getDeviceScreenSize();
         ArrayAdapter<Resolution> arrayAdapter = new ArrayAdapter<Resolution>(
                 this, android.R.layout.simple_list_item_1, RESOLUTIONS);
         Spinner s = (Spinner) findViewById(R.id.spinner);
@@ -100,6 +104,17 @@ public class MainActivity2 extends AppCompatActivity
         super.onDestroy();
         Log.d(TAG, "---> onDestroy() ..." );
         mMC264Recorder.release();
+    }
+
+    private void getDeviceScreenSize() {
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+
+        RESOLUTIONS.add(new Resolution(size.x,size.y));
+        RESOLUTIONS.add(new Resolution(size.y,size.x));
+
+        Log.i( TAG, "---> getDeviceScreenSize() : width x height = " + size.x + " x " + size.y );
     }
 
     private void saveDst( String dstStr ) {
