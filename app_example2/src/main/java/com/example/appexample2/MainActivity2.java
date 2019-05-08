@@ -6,6 +6,7 @@
 package com.example.appexample2;
 
 import android.Manifest;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.graphics.Point;
 import android.os.Bundle;
@@ -21,6 +22,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.Toast;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,11 +59,30 @@ public class MainActivity2 extends AppCompatActivity
 
     private static MC264ScreenRecorder mMC264Recorder;
 
+    private ContextWrapper mCtx;
+    private class MyMC264RecorderCallback extends MC264ScreenRecorder.Callback
+    {
+        @Override
+        public void onStop( int retcode ) {
+            Log.d(TAG, "MC264ScreenRecorder.Callback::onStop() ... retcode = " + retcode );
+
+            if( retcode == 0 ) {
+                Toast.makeText(mCtx,
+                        "Normal finished : retcode = " + retcode, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(mCtx,
+                        "Error finished : retcode = " + retcode, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "---> onCreate() ..." );
         super.onCreate(savedInstanceState);
         setContentView(R.layout.media_projection);
+
+        mCtx = this;
 
         /*
          * request an android permission : WRITE_EXTERNAL_STORAGE
@@ -89,8 +111,8 @@ public class MainActivity2 extends AppCompatActivity
         capDst.setText( savedDst );
 
         mMC264Recorder = new MC264ScreenRecorder();
+        mMC264Recorder.registerCallback( new MyMC264RecorderCallback() );
         mMC264Recorder.init( this );
-
     }
 
 //    @Override

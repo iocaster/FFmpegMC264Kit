@@ -47,6 +47,15 @@ public class MC264ScreenRecorder
     private String mDstUrl;
     private boolean mLandscapeMode = false;
 
+
+    public static abstract class Callback {
+        public void onStop( int retcode ) {}
+    }
+    private Callback mCallback;
+    public void registerCallback( Callback cb ) {
+        mCallback = cb;
+    }
+
 //    public void setActivity( Activity activity  ) {
 //        if( activity == null ) {
 //            Log.e(TAG, "---> MC264ScreenRecorder() : Error, ctx is null !!!" );
@@ -126,7 +135,7 @@ public class MC264ScreenRecorder
 
         String[] sArrays = fullUrl.split("\\s+");   //+ : to remove duplicate whitespace
 
-        ffmpeg_task = new MyTask(mActivity);
+        ffmpeg_task = new MyTask(mActivity, this);
         ffmpeg_task.execute( sArrays );
     }
 
@@ -194,9 +203,11 @@ public class MC264ScreenRecorder
 
     private static class MyTask extends AsyncTask<String, Void, Void> {
         private final WeakReference<Activity> activityWeakReference;
+        MC264ScreenRecorder mc264recorder;
 
-        MyTask(Activity activity) {
+        MyTask(Activity activity, MC264ScreenRecorder recorder) {
             activityWeakReference = new WeakReference<>(activity);
+            mc264recorder = recorder;
         }
 
         @Override
@@ -215,6 +226,10 @@ public class MC264ScreenRecorder
 //            }
 
             //finished();
+            if( mc264recorder != null ) {
+                if( mc264recorder.mCallback != null )
+                    mc264recorder.mCallback.onStop(ffmpeg_retcode);
+            }
         }
     }
 
