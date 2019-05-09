@@ -49,6 +49,7 @@ public class MC264ScreenRecorder
 
 
     public static abstract class Callback {
+        public void onStart() {}
         public void onStop( int retcode ) {}
     }
     private Callback mCallback;
@@ -139,7 +140,11 @@ public class MC264ScreenRecorder
         ffmpeg_task.execute( sArrays );
     }
 
-    private void callCallback( int retcode ) {
+    private void callCallbackStart() {
+        if( this.mCallback != null )
+            this.mCallback.onStart();
+    }
+    private void callCallbackStop( int retcode ) {
         if( this.mCallback != null )
             this.mCallback.onStop(retcode);
     }
@@ -149,7 +154,7 @@ public class MC264ScreenRecorder
         Log.d(TAG, "---> onActivityResult() ..." );
         if (requestCode != PERMISSION_CODE) {
             Log.e(TAG, "onActivityResult() : Unknown request code: " + requestCode);
-            //callCallback(-1);
+            //callCallbackStop(-1);
             stopCapture();      //stop ffmpeg
             return;
         }
@@ -157,13 +162,14 @@ public class MC264ScreenRecorder
 //            Toast.makeText(mActivity,
 //                    "User denied screen sharing permission", Toast.LENGTH_SHORT).show();
             Log.e(TAG,"onActivityResult() : User denied screen sharing permission");
-            //callCallback(-1);
+            //callCallbackStop(-1);
             stopCapture();      //stop ffmpeg
             return;
         }
         mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
         mMediaProjection.registerCallback(new MediaProjectionCallback(), null);
         mVirtualDisplay = createVirtualDisplay();
+        callCallbackStart();
     }
 
     private void shareScreen() {
@@ -269,12 +275,12 @@ public class MC264ScreenRecorder
     public void start() {
         if( mDisplayWidth <= 0 || mDisplayHeight <= 0 ) {
             Log.e(TAG, "Error, Capture size isn't set yet !!!");
-            callCallback(-1);
+            callCallbackStop(-1);
             return;
         }
         if( mDstUrl == null ) {
             Log.e(TAG, "Error, Capture DST isn't set yet, where record or stream to !!!");
-            callCallback(-1);
+            callCallbackStop(-1);
             return;
         }
 

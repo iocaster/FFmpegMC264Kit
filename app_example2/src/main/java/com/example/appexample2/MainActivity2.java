@@ -63,6 +63,11 @@ public class MainActivity2 extends AppCompatActivity
     private class MyMC264RecorderCallback extends MC264ScreenRecorder.Callback
     {
         @Override
+        public void onStart() {
+            hideMe();
+        }
+
+        @Override
         public void onStop( int retcode ) {
             Log.d(TAG, "MC264ScreenRecorder.Callback::onStop() ... retcode = " + retcode );
 
@@ -74,6 +79,8 @@ public class MainActivity2 extends AppCompatActivity
                         "Error finished : retcode = " + retcode, Toast.LENGTH_LONG).show();
             }
             btnStart.setEnabled(true);
+            ScreenRecorderNotification.cancel(mCtx);
+            //showMe();
         }
     }
 
@@ -186,18 +193,33 @@ public class MainActivity2 extends AppCompatActivity
             mMC264Recorder.setLandscapeMode( false );
         mMC264Recorder.start();
 
+        String capModeStr;
+        if( chkVideoMode.isChecked() )
+            capModeStr = new String("Capture as Landscape : " + mDisplayWidth + "x" + mDisplayHeight);
+        else
+            capModeStr = new String("Capture as Portrait : " + mDisplayHeight + "x" + mDisplayWidth);
+
         btnStart.setEnabled(false);
+        ScreenRecorderNotification.notify(this, capModeStr, 4747);
+        //hideMe();     //moved into MC264ScreenRecorder.Callback::onStart();
     }
 
     public void onBtnStop(View view) {
         mMC264Recorder.stop();
     }
 
-    public void onBtnHide(View view) {
+    private void hideMe() {
         //send this app to background
         Intent i = new Intent();
         i.setAction(Intent.ACTION_MAIN);
         i.addCategory(Intent.CATEGORY_HOME);
         this.startActivity(i);
+    }
+    private void showMe() {
+        Intent intent = new Intent(this, MainActivity2.class);
+        startActivity(intent);
+    }
+    public void onBtnHide(View view) {
+        hideMe();
     }
 }
