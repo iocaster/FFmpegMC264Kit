@@ -7,11 +7,13 @@ package com.example.appexample2;
 
 import android.Manifest;
 import android.content.ContextWrapper;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Display;
@@ -134,6 +136,26 @@ public class MainActivity2 extends AppCompatActivity
         super.onDestroy();
         Log.d(TAG, "---> onDestroy() ..." );
         mMC264Recorder.release();
+    }
+
+    @Override
+    public void onBackPressed() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Finish or Not");
+        builder.setMessage("Do you want to finish? ");
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                //MainActivity2.super.onBackPressed();
+            }
+        });
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                MainActivity2.super.onBackPressed();
+            }
+        });
+
+        builder.show();
     }
 
     private void getDeviceScreenSize() {
