@@ -126,10 +126,10 @@ public class MC264ScreenRecorder
          */
         String fullUrl;
         if( mLandscapeMode ) {
-            fullUrl = new String("ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -s "
+            fullUrl = new String("ffmpeg -probesize 32 -f lavfi -i testsrc=size=160x120:rate=30 -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr );
         } else { //rotate for HomeScreen Mode
-            fullUrl = new String("ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vf transpose=1 -vcodec mc264 -b:v 2.0M -s "
+            fullUrl = new String("ffmpeg -probesize 32 -f lavfi -i testsrc=size=160x120:rate=30 -pix_fmt yuv420p -vf transpose=1 -vcodec mc264 -b:v 2.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr);
         }
         //Log.d( TAG, "URL = " + fullUrl );
