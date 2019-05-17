@@ -6,6 +6,7 @@
 package com.example.appexample2;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -56,7 +57,8 @@ public class MainActivity2 extends AppCompatActivity
     private int mDisplayHeight;
 
     private Button btnStart, btnStop, btnHide;
-    private CheckBox chkVideoMode;
+    private CheckBox chkCaptureFromCamera;
+    private CheckBox chkVideoMode;  //landscape mode
     private EditText capDst;
 
     private static MC264ScreenRecorder mMC264Recorder;
@@ -67,6 +69,18 @@ public class MainActivity2 extends AppCompatActivity
         @Override
         public void onStart() {
             hideMe();
+
+            //launch camera preview app if user requests the camera streaming
+            if( chkCaptureFromCamera.isChecked() ) {
+                Intent intent = new Intent();
+                intent.setComponent(new ComponentName("com.example.android.camera2basic", "com.example.android.camera2basic.CameraActivity"));
+                if (chkVideoMode.isChecked()) {
+                    intent.putExtra("req_landscape", 1);
+                } else {
+                    intent.putExtra("req_landscape", 0);
+                }
+                startActivity(intent);
+            }
         }
 
         @Override
@@ -113,6 +127,7 @@ public class MainActivity2 extends AppCompatActivity
         btnStart = findViewById(R.id.button_start);
         btnStop = findViewById(R.id.button_stop);
         btnHide = findViewById(R.id.button_hide);
+        chkCaptureFromCamera = findViewById(R.id.checkBox_CaptureCamera);
         chkVideoMode = findViewById(R.id.checkBox_VideoMode);
         capDst = findViewById(R.id.editText_capDst);
 

@@ -149,7 +149,7 @@ public class MC264ScreenRecorder
             this.mCallback.onStop(retcode);
     }
 
-    //@Override
+    //client should call me instead of Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG, "---> onActivityResult() ..." );
         if (requestCode != PERMISSION_CODE) {
