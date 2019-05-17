@@ -27,6 +27,8 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.example.appexample2.camerapreview.CameraActivity;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +40,7 @@ public class MainActivity2 extends AppCompatActivity
     //private static final int PERMISSION_CODE = 1;
     private static final List<Resolution> RESOLUTIONS = new ArrayList<Resolution>() {{
         //4:3
-        //add(new Resolution(1920,1440));       //too big size : instead use 1440 x 1080
+        //add(new Resolution(1920,1440));       //too big size to encoder : instead use 1440 x 1080
         add(new Resolution(1440,1080));
         add(new Resolution(1366,1024));
         add(new Resolution(1600,1200));
@@ -70,10 +72,11 @@ public class MainActivity2 extends AppCompatActivity
         public void onStart() {
             hideMe();
 
-            //launch camera preview app if user requests the camera streaming
+            /*
+             * launch camera preview app if user selects the camera streaming
+             */
             if( chkCaptureFromCamera.isChecked() ) {
-                Intent intent = new Intent();
-                intent.setComponent(new ComponentName("com.example.android.camera2basic", "com.example.android.camera2basic.CameraActivity"));
+                Intent intent = new Intent(mCtx, CameraActivity.class);
                 if (chkVideoMode.isChecked()) {
                     intent.putExtra("req_landscape", 1);
                 } else {
@@ -243,6 +246,16 @@ public class MainActivity2 extends AppCompatActivity
 
     public void onBtnStop(View view) {
         mMC264Recorder.stop();
+    }
+
+    public void onCheckLandscape(View view) {
+        if (chkVideoMode.isChecked()) {
+            Toast.makeText(this,
+                    "Turn your phone to LANDSCAPE before click START !!!", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this,
+                    "Turn your phone to PORTRAIT before click START !!!", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void hideMe() {
