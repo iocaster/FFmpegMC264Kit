@@ -42,6 +42,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
 import kim.yt.ffmpegmc264.MC264Encoder;
+import kim.yt.ffmpegmc264.MCAACEncoder;
 
 
 public class MainActivity extends AppCompatActivity
@@ -54,6 +55,8 @@ public class MainActivity extends AppCompatActivity
     private MyTask ffmpeg_task = null;
     private static MC264Encoder mMC264Encoder;
     private static int ffmpeg_retcode = 0;
+
+    private static MCAACEncoder mMCAACEncoder;
 
     /*
      * To draw a progress monitor view with YUVFrame
@@ -89,7 +92,9 @@ public class MainActivity extends AppCompatActivity
                 1337);
 
         mMC264Encoder = new MC264Encoder();
-        mMC264Encoder.setYUVFrameListener(this, false);
+        mMC264Encoder.setYUVFrameListener(this, true);
+
+        mMCAACEncoder = new MCAACEncoder();
 
         EditText usagelabel = findViewById(R.id.usageLabel);
         //usagelabel.setFocusable(false);     //show normally but not editable
@@ -194,6 +199,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected Void doInBackground(String... strings) {
             mMC264Encoder.H264MediaCodecReady();
+            mMCAACEncoder.AACMediaCodecReady();
             ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
             return null;
         }

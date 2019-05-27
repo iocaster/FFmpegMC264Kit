@@ -19,6 +19,13 @@ static jmethodID gmid2;     //MC264Encoder.java :: void setParameter( int width,
 static jmethodID gmid3;     //MC264Encoder.java :: public void release()
 JNIEnv *genv;
 
+static jobject gobj2 = 0;    //MCAACEncoder.java
+static jclass gcls2 = 0;     //MCAACEncoder.java
+static jmethodID gamid;      //MCAACEncoder.java :: void putPCMFrameData(byte[] frameData, long pts, boolean flushOnly)
+static jmethodID gamid2;     //MCAACEncoder.java :: void setParameter(int samplerate, int bitrate, int numchannels)
+static jmethodID gamid3;     //MCAACEncoder.java :: public void release()
+JNIEnv *genv2;
+
 int main(int argc, char **argv);
 int remuxing(int argc, char **argv);
 int transcoding(int argc, char **argv);
@@ -170,6 +177,23 @@ int mediacodec_release(void)
     }
 }
 
+int mediacodecAAC_release(void)
+{
+    LOGD("ffmpeg_jni.c : mediacodecAAC_release() : Enter...\n");
+
+    if( gcls2 && gobj2 ) {
+
+        //call public void release()
+        (*genv2)->CallVoidMethod(genv2, gobj2, gamid3 );
+
+        return 0;
+    } else {
+        /* not yet prepared ... */
+        LOGE("ffmpeg_jni.c : mediacodecAAC_release() : gcls2 & gobj2 are not yet prepared !!!");
+        return -1;
+    }
+}
+
 int sendParameterToJavaEncoder( int width, int height, int bitrate, float framerate, int gop, int colorformat )
 {
     LOGD("sendParameterToJavaEncoder() : w=%d h=%d bitrate=%d framerate=%f gop=%d colorformat=%d\n",
@@ -199,6 +223,123 @@ int sendFrameToJavaEncoder( void *data, int length, int stride, uint64_t pts ) {
     } else {
         /* not yet prepared ... */
         LOGE("sendFrameToJavaEncoder() : gcls & gobj are not yet prepared !!!");
+        return -1;
+    }
+    return 0;
+}
+
+JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_MCAACEncoder_AACMediaCodecReady(JNIEnv *env, jobject obj)
+{
+    jclass cls1 = (*env)->GetObjectClass(env, obj);
+    if (cls1 == 0) {
+        /* error */
+    }
+    gcls2 = (*env)->NewGlobalRef(env, cls1);
+    if (gcls2 == 0) {
+        /* error */
+    }
+
+    gobj2 = (*env)->NewGlobalRef(env, obj);
+
+    gamid = (*env)->GetMethodID(env, gcls2, "putPCMFrameData", "([BJZ)V");   //void putPCMFrameData(byte[] frameData, long pts, boolean flushOnly)
+    gamid2 = (*env)->GetMethodID(env, gcls2, "setParameter", "(III)V");      //void setParameter(int samplerate, int bitrate, int numchannels)
+    gamid3 = (*env)->GetMethodID(env, gcls2, "release", "()V");               //public void release()
+    if (gamid == 0 || gamid2 == 0 ) {
+        /* error */
+        return;
+    }
+
+    genv2 = env;
+}
+
+/*
+ * Local functions called by java & ffmpeg libavcodec
+ */
+void pushEncodedFrameAAC( unsigned char* pData, int length, int64_t presentationTimeUs, int32_t b_keyframe );
+int getEncodedFrameAAC( void **data, int *length, int64_t *presentationTimeUs, int32_t *b_keyframe );
+
+JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_MCAACEncoder_onAACMediaCodecEncodedFrame2(JNIEnv *env, jobject obj, jobject data, jint size, jlong presentationTimeUs, jint b_keyframe)
+{
+    int isCopy;
+    jbyte * pData = (*env)->GetDirectBufferAddress(env, data);
+
+    int64_t pts = presentationTimeUs;  //jlong is 64-bit
+    int32_t is_keyframe = b_keyframe;
+
+    pushEncodedFrameAAC( (unsigned char*) pData, size, pts, is_keyframe );
+}
+
+/*
+ * container for both pushEncodedFrame() and getEncodedFrame(). No lock required in use case.
+ */
+struct encodedAACPacket {
+    unsigned char *pData;
+    int length;
+    int64_t presentationTimeUs;
+    int32_t b_keyframe;
+};
+
+#define MAX_ENC_AAC_PACKETS  8
+static struct encodedAACPacket encodedAACPackets[MAX_ENC_AAC_PACKETS+1];
+static uint32_t encodedPktIdxAACHead = 0;
+static uint32_t encodedPktIdxAACTail = 0;
+
+void pushEncodedFrameAAC( unsigned char* pData, int length, int64_t presentationTimeUs, int32_t b_keyframe )
+{
+    encodedAACPackets[encodedPktIdxAACHead].pData = (unsigned char *) malloc( length );
+    memcpy( encodedAACPackets[encodedPktIdxAACHead].pData, pData, length );
+    encodedAACPackets[encodedPktIdxAACHead].length = length;
+    encodedAACPackets[encodedPktIdxAACHead].presentationTimeUs = presentationTimeUs;
+    encodedAACPackets[encodedPktIdxAACHead].b_keyframe = b_keyframe;
+
+    encodedPktIdxAACHead = ++encodedPktIdxAACHead % MAX_ENC_AAC_PACKETS;
+}
+
+int getEncodedFrameAAC( void **data, int *length, int64_t *presentationTimeUs, int32_t *b_keyframe )
+{
+    if( encodedPktIdxAACHead != encodedPktIdxAACTail ) {
+        *data = encodedAACPackets[encodedPktIdxAACTail].pData;
+        *length = encodedAACPackets[encodedPktIdxAACTail].length;
+        *presentationTimeUs = encodedAACPackets[encodedPktIdxAACTail].presentationTimeUs;
+        *b_keyframe = encodedAACPackets[encodedPktIdxAACTail].b_keyframe;
+
+        encodedPktIdxAACTail = ++encodedPktIdxAACTail % MAX_ENC_AAC_PACKETS;
+        return 0;
+    } else {
+        *data = NULL;
+    }
+    return -1;
+}
+
+int sendAACParameterToJavaEncoder( int samplerate, int bitrate, int numchannels )
+{
+    LOGD("sendAACParameterToJavaEncoder() : samplerate=%d bitrate=%d numchannels=%d\n",
+         samplerate, bitrate, numchannels );
+
+    if( gcls2 && gobj2 ) {
+        //call setParameter(int samplerate, int bitrate, int numchannels)
+        (*genv2)->CallVoidMethod(genv2, gobj2, gamid2, samplerate, bitrate, numchannels );
+        return 0;
+    } else {
+        /* not yet prepared ... */
+        LOGE("sendAACParameterToJavaEncoder() : gcls2 & gobj2 are not yet prepared !!!");
+        return -1;
+    }
+}
+
+int sendPCMFrameToJavaEncoder( void *data, int length, uint64_t pts ) {
+    if( gcls2 && gobj2 ) {
+        jbyteArray jb = (*genv2)->NewByteArray(genv2, length);
+        (*genv2)->SetByteArrayRegion(genv2, jb, 0, length, (jbyte*)data);
+
+        //call void putPCMFrameData(byte[] frameData, long pts, boolean flushOnly)
+        (*genv2)->CallVoidMethod(genv2, gobj2, gamid, jb, pts, /*flush*/0 );
+
+        (*genv2)->DeleteLocalRef(genv2, jb);
+        return length;
+    } else {
+        /* not yet prepared ... */
+        LOGE("sendPCMFrameToJavaEncoder() : gcls2 & gobj2 are not yet prepared !!!");
         return -1;
     }
     return 0;
