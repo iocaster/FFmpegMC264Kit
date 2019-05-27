@@ -643,7 +643,7 @@ public class MCAACEncoder {
             return frameIndex * 20000;  //20msec for encodeTest();
         } else {
 //            return frameIndex * 20000;  //20msec at 44100Hz
-            long fidx = (long) (frameIndex / (long)mFrameSize);  //frameIndex is the fold of mFrameSize
+            long fidx = (long) ((double)frameIndex / (double)mFrameSize);  //frameIndex is the fold of mFrameSize
             if( VERBOSE ) Log.d(TAG, "---> computePresentationTime() : fidx = " + fidx);
             return fidx * 20000; //20msec
         }
