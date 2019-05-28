@@ -207,6 +207,7 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Void aVoid) {
             mMC264Encoder.reset();
+            mMCAACEncoder.reset();
             final MainActivity activity = activityWeakReference.get();
             if (activity != null) {
                 activity.finished();
