@@ -1,26 +1,26 @@
 FFmpegMC264Kit
 ===============
 
-FFmpegMC264Kit is a ffmpeg android library powered by MediaCodec HW accelated encoder.<br> 
-Now use 'mc264' instead of 'libx264' in runing ffmpeg command in your code.
+FFmpegMC264Kit is a ffmpeg android library powered by MediaCodec HW accelated encoders.<br> 
+Now use 'mc264' / 'mcaac' instead of 'libx264' / 'aac' in runing ffmpeg command in your code.
 
 FFmpegMC264 library doesn't call ffmpeg executable file through exec().
 Instead this library has embedded the ffmpeg as an API function.
 So, you can call the ffmpeg like this : 
 * int retcode = mMC264Encoder.ffmpegRun(cmdString);
   - cmdString example : 
-  - ffmpeg -i INPUT -vcodec mc264 -acodec ac3 -f mp4 OUTPUT
+  - ffmpeg -i INPUT -vcodec mc264 -acodec mcaac -f mp4 OUTPUT
   - ffmpeg -i INPUT -vcodec mc264 -b:v 2.0M -r 30 -g 15 -acodec ac3 -f mp4 OUTPUT
   - ffmpeg -i INPUT -vcodec mc264 -b:v 2.0M -r 30 -g 15 -acodec aac -b:a 64k -f mp4 OUTPUT
   - - aac : '-b:a 64k' recommended or AV sync problem on my device (LG Q6).
-  - ffmpeg -re -i /sdcard/movie.avi -vcodec mc264 -acodec ac3 -f mpegts udp://192.168.0.12:5555?pkt_size=1316&buffer_size=655360
+  - ffmpeg -re -i /sdcard/movie.avi -vcodec mc264 -acodec mcaac -f mpegts udp://192.168.0.12:5555?pkt_size=1316&buffer_size=655360
   - ffmpeg -i rtsp://192.168.0.10/videodevice -vcodec mc264 -an -f mpegts udp://192.168.0.12:5555?pkt_size=1316
 
   - generate TV test pattern : 
   - ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -r 30 -g 15 -an -f mp4 OUTPUT
  
-For this, in C side, an encoder module - mc264.c - was added into ffmpeg libavcodec.<br>
-In java side, an encoder controller class - MC264Encoder.java - was added over android MediaCodec (H.264 encoder only).
+For this, in C side, an encoder module - mc264.c / mcaac.c - was added into ffmpeg libavcodec.<br>
+In java side, an encoder controller class - MC264Encoder.java / MCAACEncoder.java - was added over android MediaCodec (H.264 / AAC encoders only).
 
 Enjoy ffmpeg powered by MediaCodec HW accelated encoder.
 
@@ -30,6 +30,7 @@ Enjoy ffmpeg powered by MediaCodec HW accelated encoder.
 ### prepare an instance
 * mMC264Encoder = new MC264Encoder();
 * mMC264Encoder.setYUVFrameListener(this, false);  - optional API
+* mMCAACEncoder = new MCAACEncoder();
 
 ### prepare an AsyncTask
 * ffmpeg_task = new MyTask(this);
@@ -37,6 +38,7 @@ Enjoy ffmpeg powered by MediaCodec HW accelated encoder.
 
 ### run the instance in the task :: doInBackground()
 * mMC264Encoder.H264MediaCodecReady();
+* mMCAACEncoder.AACMediaCodecReady();
 * mMC264Encoder.ffmpegRun( strings );
 
 ### stop
@@ -45,6 +47,7 @@ Enjoy ffmpeg powered by MediaCodec HW accelated encoder.
 
 ### post stop
 * mMC264Encoder.reset();
+* mMCAACEncoder.reset();
 
 
 ## Supported Color Format :
