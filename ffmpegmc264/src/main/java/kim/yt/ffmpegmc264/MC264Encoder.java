@@ -51,7 +51,7 @@ public class MC264Encoder {
 
 
     private static final String TAG = "MC264Encoder";
-    private final boolean VERBOSE = true;
+    private final boolean VERBOSE = false;
     private final boolean VERBOSE_DUMP = false;
 
     //for MediaProjection
@@ -367,15 +367,18 @@ public class MC264Encoder {
             int encoderStatus = encoder.dequeueOutputBuffer(info, TIMEOUT_USEC2);
             if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                 // no output available yet
-                if (VERBOSE) Log.d(TAG, "no output from encoder available");
+                //if (VERBOSE)
+                    Log.d(TAG, "no output from encoder available");
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                 // not expected for an encoder
                 //encoderOutputBuffers = encoder.getOutputBuffers();
-                if (VERBOSE) Log.d(TAG, "encoder output buffers changed");
+                //if (VERBOSE)
+                    Log.d(TAG, "encoder output buffers changed");
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 // not expected for an encoder
                 MediaFormat newFormat = encoder.getOutputFormat();
-                if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
+                //if (VERBOSE)
+                    Log.d(TAG, "encoder output format changed: " + newFormat);
             } else if (encoderStatus < 0) {
                 Log.e(TAG, "unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
             } else { // encoderStatus >= 0

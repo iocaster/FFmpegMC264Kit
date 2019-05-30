@@ -10,6 +10,7 @@ import android.content.ComponentName;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -61,6 +62,7 @@ public class MainActivity2 extends AppCompatActivity
     private Button btnStart, btnStop, btnHide;
     private CheckBox chkCaptureFromCamera;
     private CheckBox chkVideoMode;  //landscape mode
+    private CheckBox chkMIC;
     private EditText capDst;
 
     private static MC264ScreenRecorder mMC264Recorder;
@@ -98,6 +100,9 @@ public class MainActivity2 extends AppCompatActivity
                         "Error finished : retcode = " + retcode, Toast.LENGTH_LONG).show();
             }
             btnStart.setEnabled(true);
+            chkCaptureFromCamera.setEnabled(true);
+            chkVideoMode.setEnabled(true);
+            chkMIC.setEnabled(true);
             ScreenRecorderNotification.cancel(mCtx);
             //showMe();
         }
@@ -118,6 +123,9 @@ public class MainActivity2 extends AppCompatActivity
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 1337);
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.RECORD_AUDIO},
+                1338);
 
         //getDeviceScreenSize();
         ArrayAdapter<Resolution> arrayAdapter = new ArrayAdapter<Resolution>(
@@ -132,6 +140,7 @@ public class MainActivity2 extends AppCompatActivity
         btnHide = findViewById(R.id.button_hide);
         chkCaptureFromCamera = findViewById(R.id.checkBox_CaptureCamera);
         chkVideoMode = findViewById(R.id.checkBox_VideoMode);
+        chkMIC = findViewById(R.id.checkBox_mic);
         capDst = findViewById(R.id.editText_capDst);
 
         String defaultDst = getResources().getString(R.string.cap_dst_ussage2);
@@ -227,10 +236,13 @@ public class MainActivity2 extends AppCompatActivity
 
         mMC264Recorder.setCaptureSize( mDisplayWidth, mDisplayHeight );
         mMC264Recorder.setDst(capDstStr);
-        if( chkVideoMode.isChecked() )
-            mMC264Recorder.setLandscapeMode( true );
-        else
-            mMC264Recorder.setLandscapeMode( false );
+        if( chkVideoMode.isChecked() ) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); //redudant? No, required when started without clicking landscape mode
+            mMC264Recorder.setLandscapeMode(true);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            mMC264Recorder.setLandscapeMode(false);
+        }
         mMC264Recorder.start();
 
         String capModeStr;
@@ -240,6 +252,9 @@ public class MainActivity2 extends AppCompatActivity
             capModeStr = new String("Capture as Portrait : " + mDisplayHeight + "x" + mDisplayWidth);
 
         btnStart.setEnabled(false);
+        chkCaptureFromCamera.setEnabled(false);
+        chkVideoMode.setEnabled(false);
+        chkMIC.setEnabled(false);
         ScreenRecorderNotification.notify(this, capModeStr, 4747);
         //hideMe();     //moved into MC264ScreenRecorder.Callback::onStart();
     }
@@ -250,12 +265,22 @@ public class MainActivity2 extends AppCompatActivity
 
     public void onCheckLandscape(View view) {
         if (chkVideoMode.isChecked()) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             Toast.makeText(this,
                     "Turn your phone to LANDSCAPE before click START !!!", Toast.LENGTH_LONG).show();
         } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             Toast.makeText(this,
                     "Turn your phone to PORTRAIT before click START !!!", Toast.LENGTH_LONG).show();
         }
+    }
+
+    public void onCheckMIC(View view) {
+        if (chkMIC.isChecked())
+            mMC264Recorder.includeMICCapture( true );
+        else
+            mMC264Recorder.includeMICCapture( false );
+
     }
 
     private void hideMe() {

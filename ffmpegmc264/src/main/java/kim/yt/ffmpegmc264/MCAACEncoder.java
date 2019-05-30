@@ -17,11 +17,16 @@
 
 package kim.yt.ffmpegmc264;
 
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
@@ -30,6 +35,8 @@ import android.view.Surface;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import static java.lang.Thread.*;
 
 public class MCAACEncoder {
 //    static {
@@ -51,15 +58,17 @@ public class MCAACEncoder {
 
 
     private static final String TAG = "MCAACEncoder";
-    private final boolean VERBOSE = true;
+    private final boolean VERBOSE = false;
     private final boolean VERBOSE_DUMP = false;
     private final boolean SAVETOFILE = false;
     private boolean mEncodeTest = false;
 
     //for MediaProjection
-//    private boolean mEnableScreenGrabber = false;
+    private boolean mEnableScreenGrabber = false;
     private Surface mEncoderSurface;
     private long firstInfopresentationTimeUs = 0;
+    private AudioRecord mAudioRecorder = null;
+    MyMICAudio myMICAudio;
 
 
 //    private static final boolean DEBUG_SAVE_FILE = false;   // save copy of encoded movie
@@ -132,6 +141,10 @@ public class MCAACEncoder {
             //mStride = -1;
             mFrameIndex = 0;
         }
+
+        if( mAudioRecorder != null ) {
+            mAudioRecorder.stop();
+        }
     }
 
     public void release() {
@@ -145,6 +158,12 @@ public class MCAACEncoder {
                 encoder.reset();
             }
             //encoder.release();    //blocked to reuse multiple times
+        }
+
+        if( mAudioRecorder != null ) {
+            mAudioRecorder.stop();
+            mAudioRecorder.release();
+            mAudioRecorder = null;
         }
 
         if( SAVETOFILE ) {
@@ -179,7 +198,7 @@ public class MCAACEncoder {
 
         while (!isEncodeDone()) {
             try {
-                Thread.sleep(100);
+                sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -256,17 +275,38 @@ public class MCAACEncoder {
             }
 
             ByteBuffer inputBuf;
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                /*ByteBuffer*/ inputBuf = encoder.getInputBuffer(inputBufIndex);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                /*ByteBuffer*/
+                inputBuf = encoder.getInputBuffer(inputBufIndex);
             } else {
-                /*ByteBuffer*/ inputBuf = encoderInputBuffers[inputBufIndex];
+                /*ByteBuffer*/
+                inputBuf = encoderInputBuffers[inputBufIndex];
             }
 
-            inputBuf.clear();
-            inputBuf.put(frameData);
+            if( !mEnableScreenGrabber ) {
+                inputBuf.clear();
+                inputBuf.put(frameData);
+            } else {
+                inputBuf.clear();
+                //inputBuf.put(frameData);  //moved down
+
+                int bufferSize = frameData.length;
+                ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bufferSize);
+                int rc = mAudioRecorder.read(byteBuffer,bufferSize);
+
+                if( rc > 0 ) {
+                    byte[] bytes = new byte[bufferSize];
+                    byteBuffer.get(bytes, 0, bytes.length);
+                    //mMCAACEncoder.putPCMFrameData(bytes, frameIdx++, false);
+                    inputBuf.put(bytes);
+                } else {
+                    Log.e(TAG, "Error : read mic audio data rc = " + rc);
+                }
+            }
             int dataLen = mFrameSize * 2 * mNumChannels;
-            encoder.queueInputBuffer(inputBufIndex, 0, (frameData.length > dataLen)? dataLen : frameData.length, ptsUsec, 0);
-            if (VERBOSE) Log.d(TAG, "submitted frame to enc (length=" + frameData.length + ") pts=" + pts + " computePresentationTime(pts)=" + ptsUsec);
+            encoder.queueInputBuffer(inputBufIndex, 0, (frameData.length > dataLen) ? dataLen : frameData.length, ptsUsec, 0);
+            if (VERBOSE)
+                Log.d(TAG, "submitted frame to enc (length=" + frameData.length + ") pts=" + pts + " computePresentationTime(pts)=" + ptsUsec);
         } else {
             // either all in use, or we timed out during initial setup
             //if (VERBOSE)
@@ -280,15 +320,18 @@ public class MCAACEncoder {
             int encoderStatus = encoder.dequeueOutputBuffer(info, TIMEOUT_USEC2);
             if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                 // no output available yet
-                if (VERBOSE) Log.d(TAG, "no output from encoder available");
+                //if (VERBOSE)
+                    Log.d(TAG, "no output from encoder available");
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                 // not expected for an encoder
                 //encoderOutputBuffers = encoder.getOutputBuffers();
-                if (VERBOSE) Log.d(TAG, "encoder output buffers changed");
+                //if (VERBOSE)
+                    Log.d(TAG, "encoder output buffers changed");
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 // not expected for an encoder
                 MediaFormat newFormat = encoder.getOutputFormat();
-                if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
+                //if (VERBOSE)
+                    Log.d(TAG, "encoder output format changed: " + newFormat);
 
                 /*
                  * prepare muxer to save encoded data into a file
@@ -518,9 +561,40 @@ public class MCAACEncoder {
         }
     }
 
-//    public void enableScreenGrabber( boolean enable ) {
-//        mEnableScreenGrabber = enable;
-//    }
+    public void enableScreenGrabber( boolean enable ) {
+        mEnableScreenGrabber = enable;
+
+//        int N = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+//        mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, 44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, N*2);
+//        mAudioRecorder.startRecording();
+
+        /*MyMICAudio*/ myMICAudio = new MyMICAudio();
+        myMICAudio.start();
+
+    }
+
+    class MyMICAudio extends Thread
+    {
+        private static final String TAG = "MyMICAudio";
+        private boolean stopped = false;
+
+        private MyMICAudio()
+        {
+            //android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
+
+            int N = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+            mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, 44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, N*2);
+
+            if( mAudioRecorder.getState() != mAudioRecorder.STATE_INITIALIZED ) {
+                Log.e( TAG, "--> AudioRecord not yet initialized !!!");
+            }
+        }
+
+        @Override
+        public void run() {
+                mAudioRecorder.startRecording();
+        }
+    }
 
     public Surface getEncoderSurface() {
         return mEncoderSurface;
@@ -642,11 +716,9 @@ public class MCAACEncoder {
         if( mEncodeTest ) {
             return frameIndex * 20000;  //20msec for encodeTest();
         } else {
-//            return frameIndex * 20000;  //20msec at 44100Hz
-            long fidx = (long) ((double)frameIndex / (double)mFrameSize);  //frameIndex is the fold of mFrameSize
+            long fidx = (long) ((double)frameIndex / (double)mFrameSize);
             if( VERBOSE ) Log.d(TAG, "---> computePresentationTime() : fidx = " + fidx);
             return fidx * 20000; //20msec
         }
     }
-
 }

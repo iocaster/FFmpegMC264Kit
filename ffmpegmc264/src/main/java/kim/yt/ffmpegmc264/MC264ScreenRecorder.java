@@ -31,6 +31,8 @@ public class MC264ScreenRecorder
     private static final String TAG = "MC264ScreenRecorder";
     private static final int PERMISSION_CODE = 1;
 
+    private static boolean ENABLE_MIC_AUDIO = false;
+
     private int mScreenDensity;
     private MediaProjectionManager mProjectionManager;
     private int mDisplayWidth0, mDisplayWidth;
@@ -41,6 +43,7 @@ public class MC264ScreenRecorder
 
     private MyTask ffmpeg_task = null;
     private static MC264Encoder mMC264Encoder;
+    private static MCAACEncoder mMCAACEncoder;
     private static int ffmpeg_retcode = 0;
 
     private Activity mActivity;
@@ -91,6 +94,10 @@ public class MC264ScreenRecorder
         mMC264Encoder = new MC264Encoder();
         //mMC264Encoder.setYUVFrameListener(this, true);
         mMC264Encoder.enableScreenGrabber(true);
+
+        mMCAACEncoder = new MCAACEncoder();
+        //mMCAACEncoder.enableScreenGrabber(true);  //moved into Task because too heavy MIC recording thread
+
     }
 
     public void release() {
@@ -126,13 +133,21 @@ public class MC264ScreenRecorder
          */
         String fullUrl;
         if( mLandscapeMode ) {
-            fullUrl = new String("ffmpeg -probesize 32 -f lavfi -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -s "
+            if( !ENABLE_MIC_AUDIO )
+                fullUrl = new String("ffmpeg -probesize 32 -f lavfi -re -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr );
+            else
+                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 2 -f lavfi -re -i sine=frequency=1000:sample_rate=44100 -f lavfi -re -i rgbtestsrc=size=160x120:rate=15 -pix_fmt yuv420p -map 1:v -map 0:a -vcodec mc264 -b:v 2.0M -s "
+                    + mDisplayWidth + "x" + mDisplayHeight + " -acodec mcaac " + capDstStr );
         } else { //rotate for HomeScreen Mode
-            fullUrl = new String("ffmpeg -probesize 32 -f lavfi -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vf transpose=1 -vcodec mc264 -b:v 2.0M -s "
+            if( !ENABLE_MIC_AUDIO )
+                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 2 -f lavfi -re -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vf transpose=1 -vcodec mc264 -b:v 2.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr);
+            else
+                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 3 -f lavfi -re -i sine=frequency=1:sample_rate=44100 -f lavfi -re -i rgbtestsrc=size=160x120:rate=15 -pix_fmt yuv420p -vf transpose=1 -map 1:v -map 0:a -vcodec mc264 -b:v 2.0M -s "
+                    + mDisplayWidth + "x" + mDisplayHeight + " -acodec mcaac " + capDstStr);
         }
-        //Log.d( TAG, "URL = " + fullUrl );
+        Log.d( TAG, "URL = " + fullUrl );
 
         String[] sArrays = fullUrl.split("\\s+");   //+ : to remove duplicate whitespace
 
@@ -228,6 +243,10 @@ public class MC264ScreenRecorder
         @Override
         protected Void doInBackground(String... strings) {
             mMC264Encoder.H264MediaCodecReady();
+            if( ENABLE_MIC_AUDIO ) {
+                mMCAACEncoder.enableScreenGrabber(true);    //moved here from init() <- onCreate()
+                mMCAACEncoder.AACMediaCodecReady();
+            }
             ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
             return null;
         }
@@ -235,6 +254,9 @@ public class MC264ScreenRecorder
         @Override
         protected void onPostExecute(Void aVoid) {
             mMC264Encoder.reset();
+            if( ENABLE_MIC_AUDIO )
+                mMCAACEncoder.reset();
+
 //            final Activity activity = activityWeakReference.get();
 //            if (activity != null) {
 //                activity.finished();
@@ -268,6 +290,13 @@ public class MC264ScreenRecorder
         }
     }
 
+    public void includeMICCapture( boolean value ) {
+        if( value )
+            ENABLE_MIC_AUDIO = true;
+        else
+            ENABLE_MIC_AUDIO = false;
+    }
+
     public void setDst( String dstUrl ) {
         mDstUrl = dstUrl;
     }
@@ -284,7 +313,7 @@ public class MC264ScreenRecorder
             return;
         }
 
-        startCapture();     //start ffmpeg
+        startCapture();     //start ffmpeg : should be called before shareScreen();
         shareScreen();
     }
 
