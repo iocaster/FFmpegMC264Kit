@@ -237,7 +237,7 @@ public class MainActivity2 extends AppCompatActivity
         mMC264Recorder.setCaptureSize( mDisplayWidth, mDisplayHeight );
         mMC264Recorder.setDst(capDstStr);
         if( chkVideoMode.isChecked() ) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); //redudant? No, required when started without clicking landscape mode
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); //redundant? No, required when started without clicking landscape mode
             mMC264Recorder.setLandscapeMode(true);
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);

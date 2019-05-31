@@ -68,7 +68,7 @@ public class MCAACEncoder {
     private Surface mEncoderSurface;
     private long firstInfopresentationTimeUs = 0;
     private AudioRecord mAudioRecorder = null;
-    MyMICAudio myMICAudio;
+    private MyMICAudio myMICAudio;
 
 
 //    private static final boolean DEBUG_SAVE_FILE = false;   // save copy of encoded movie
