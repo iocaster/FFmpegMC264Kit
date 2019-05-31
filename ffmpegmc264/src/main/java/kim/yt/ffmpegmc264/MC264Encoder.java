@@ -31,20 +31,20 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class MC264Encoder {
-    static {
-        System.loadLibrary("ffmpeg_jni");
-        System.loadLibrary("avutil-56");
-        System.loadLibrary("swresample-3");
-        System.loadLibrary("avcodec-58");
-        System.loadLibrary("avformat-58");
-        System.loadLibrary("swscale-5");
-        System.loadLibrary("avfilter-7");
-        //System.loadLibrary("avdevice");
-        //System.loadLibrary("ffmpeg_jni"); //moved up
-    }
-    public native int ffmpegRun(String[] args);
-    public native int ffmpegStop();
-    public native int ffmpegForceStop();
+//    static {
+//        System.loadLibrary("ffmpeg_jni");
+//        System.loadLibrary("avutil-56");
+//        System.loadLibrary("swresample-3");
+//        System.loadLibrary("avcodec-58");
+//        System.loadLibrary("avformat-58");
+//        System.loadLibrary("swscale-5");
+//        System.loadLibrary("avfilter-7");
+//        //System.loadLibrary("avdevice");
+//        //System.loadLibrary("ffmpeg_jni"); //moved up
+//    }
+//    public native int ffmpegRun(String[] args);
+//    public native int ffmpegStop();
+//    public native int ffmpegForceStop();
     public native void H264MediaCodecReady();
     public native void onH264MediaCodecEncodedFrame(byte[] data, long presentationTimeUs, int b_keyframe);
     public native void onH264MediaCodecEncodedFrame2(ByteBuffer data, int size, long presentationTimeUs, int b_keyframe);

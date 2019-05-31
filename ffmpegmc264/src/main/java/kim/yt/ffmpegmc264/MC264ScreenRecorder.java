@@ -44,6 +44,7 @@ public class MC264ScreenRecorder
     private MyTask ffmpeg_task = null;
     private static MC264Encoder mMC264Encoder;
     private static MCAACEncoder mMCAACEncoder;
+    private static LibFFmpegMC264 mLibFFmpeg;
     private static int ffmpeg_retcode = 0;
 
     private Activity mActivity;
@@ -91,12 +92,17 @@ public class MC264ScreenRecorder
         mProjectionManager =
                 (MediaProjectionManager) mActivity.getSystemService(Context.MEDIA_PROJECTION_SERVICE);
 
-        mMC264Encoder = new MC264Encoder();
-        //mMC264Encoder.setYUVFrameListener(this, true);
-        mMC264Encoder.enableScreenGrabber(true);
+//        mMC264Encoder = new MC264Encoder();
+//        //mMC264Encoder.setYUVFrameListener(this, true);
+//        mMC264Encoder.enableScreenGrabber(true);
+//
+//        mMCAACEncoder = new MCAACEncoder();
+//        //mMCAACEncoder.enableScreenGrabber(true);  //moved into Task because too heavy MIC recording thread
 
-        mMCAACEncoder = new MCAACEncoder();
-        //mMCAACEncoder.enableScreenGrabber(true);  //moved into Task because too heavy MIC recording thread
+        mLibFFmpeg = new LibFFmpegMC264();
+        mLibFFmpeg.enableScreenCapture(true);
+        if(ENABLE_MIC_AUDIO)
+            mLibFFmpeg.enableMICCapture(true);
 
     }
 
@@ -115,7 +121,8 @@ public class MC264ScreenRecorder
     }
 
     private void stopCapture() {
-        mMC264Encoder.ffmpegStop();
+//        mMC264Encoder.ffmpegStop();
+        mLibFFmpeg.Stop();
     }
 
     private void startCapture() {
@@ -208,10 +215,15 @@ public class MC264ScreenRecorder
     }
 
     private VirtualDisplay createVirtualDisplay() {
+//        return mMediaProjection.createVirtualDisplay("MC264ScreenRecorder",
+//                mDisplayWidth, mDisplayHeight, mScreenDensity,
+//                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
+//                /*mSurface*/ mMC264Encoder.getEncoderSurface(), null /*Callbacks*/, null /*Handler*/);
+
         return mMediaProjection.createVirtualDisplay("MC264ScreenRecorder",
                 mDisplayWidth, mDisplayHeight, mScreenDensity,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
-                /*mSurface*/ mMC264Encoder.getEncoderSurface(), null /*Callbacks*/, null /*Handler*/);
+                /*mSurface*/ mLibFFmpeg.getMC264Encoder().getEncoderSurface(), null /*Callbacks*/, null /*Handler*/);
     }
 
     private class MediaProjectionCallback extends MediaProjection.Callback {
@@ -242,20 +254,25 @@ public class MC264ScreenRecorder
 
         @Override
         protected Void doInBackground(String... strings) {
-            mMC264Encoder.H264MediaCodecReady();
-            if( ENABLE_MIC_AUDIO ) {
-                mMCAACEncoder.enableScreenGrabber(true);    //moved here from init() <- onCreate()
-                mMCAACEncoder.AACMediaCodecReady();
-            }
-            ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
+//            mMC264Encoder.H264MediaCodecReady();
+//            if( ENABLE_MIC_AUDIO ) {
+//                mMCAACEncoder.enableScreenGrabber(true);    //moved here from init() <- onCreate()
+//                mMCAACEncoder.AACMediaCodecReady();
+//            }
+//            ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
+
+            mLibFFmpeg.Ready();
+            ffmpeg_retcode = mLibFFmpeg.Run(strings);
+
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            mMC264Encoder.reset();
-            if( ENABLE_MIC_AUDIO )
-                mMCAACEncoder.reset();
+//            mMC264Encoder.reset();
+//            if( ENABLE_MIC_AUDIO )
+//                mMCAACEncoder.reset();
+            mLibFFmpeg.Reset();
 
 //            final Activity activity = activityWeakReference.get();
 //            if (activity != null) {

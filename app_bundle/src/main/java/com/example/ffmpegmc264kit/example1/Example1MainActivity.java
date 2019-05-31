@@ -43,6 +43,7 @@ import java.io.ByteArrayOutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
+import kim.yt.ffmpegmc264.LibFFmpegMC264;
 import kim.yt.ffmpegmc264.MC264Encoder;
 
 public class Example1MainActivity extends AppCompatActivity
@@ -53,7 +54,8 @@ public class Example1MainActivity extends AppCompatActivity
     private boolean spinnerActive = false;
 
     private MyTask ffmpeg_task = null;
-    private static MC264Encoder mMC264Encoder;
+    //private static MC264Encoder mMC264Encoder;
+    private static LibFFmpegMC264 mLibFFmpeg;
     private static int ffmpeg_retcode = 0;
 
     /*
@@ -89,8 +91,10 @@ public class Example1MainActivity extends AppCompatActivity
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 1337);
 
-        mMC264Encoder = new MC264Encoder();
-        mMC264Encoder.setYUVFrameListener(this, true);
+//        mMC264Encoder = new MC264Encoder();
+//        mMC264Encoder.setYUVFrameListener(this, true);
+        mLibFFmpeg = new LibFFmpegMC264();
+        mLibFFmpeg.getMC264Encoder().setYUVFrameListener(this, true);
 
         EditText usagelabel = findViewById(R.id.usageLabel);
         //usagelabel.setFocusable(false);     //show normally but not editable
@@ -168,11 +172,13 @@ public class Example1MainActivity extends AppCompatActivity
         String fullUrl = new String("") + urlSrc.getText();
         saveCmd(fullUrl);
 
-        mMC264Encoder.ffmpegStop();
-//        mMC264Encoder.reset();     //Please, call mMC264Encoder.reset() inside onPostExecute() not here
+//        mMC264Encoder.ffmpegStop();
+////        mMC264Encoder.reset();     //Please, call mMC264Encoder.reset() inside onPostExecute() not here
+        mLibFFmpeg.Stop();
 
         if( ++stopCnt >= 3 )
-            mMC264Encoder.ffmpegForceStop();
+//            mMC264Encoder.ffmpegForceStop();
+            mLibFFmpeg.ForceStop();
     }
 
     void finished() {
@@ -194,14 +200,17 @@ public class Example1MainActivity extends AppCompatActivity
 
         @Override
         protected Void doInBackground(String... strings) {
-            mMC264Encoder.H264MediaCodecReady();
-            ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
+//            mMC264Encoder.H264MediaCodecReady();
+//            ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
+            mLibFFmpeg.Ready();
+            ffmpeg_retcode = mLibFFmpeg.Run(strings);
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            mMC264Encoder.reset();
+//            mMC264Encoder.reset();
+            mLibFFmpeg.Reset();
             final Example1MainActivity activity = activityWeakReference.get();
             if (activity != null) {
                 activity.finished();

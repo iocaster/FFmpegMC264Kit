@@ -41,6 +41,74 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     return JNI_VERSION_1_6;
 }
 
+JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_MC264Encoder_H264MediaCodecReady(JNIEnv *env, jobject obj);
+JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_MCAACEncoder_AACMediaCodecReady(JNIEnv *env, jobject obj);
+
+JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_LibFFmpegMC264_FFmpegReady(JNIEnv *env, jobject obj)
+{
+    jclass cls = (*env)->GetObjectClass(env, obj);
+
+    jfieldID  fid = (*env)->GetFieldID(env, cls, "mMC264Encoder", "Lkim/yt/ffmpegmc264/MC264Encoder;");
+    if (fid == 0) return;
+    jobject mobj = (*env)->GetObjectField(env, obj, fid);
+    Java_kim_yt_ffmpegmc264_MC264Encoder_H264MediaCodecReady(env, mobj);
+
+    /*jfieldID*/  fid = (*env)->GetFieldID(env, cls, "mMCAACEncoder", "Lkim/yt/ffmpegmc264/MCAACEncoder;");
+    if (fid == 0) return;
+    /*jobject*/ mobj = (*env)->GetObjectField(env, obj, fid);
+    Java_kim_yt_ffmpegmc264_MCAACEncoder_AACMediaCodecReady(env, mobj);
+}
+
+JNIEXPORT jint JNICALL Java_kim_yt_ffmpegmc264_LibFFmpegMC264_ffmpegStop(JNIEnv *env, jobject instance)
+{
+    ytkim_ffmpeg_stop();
+}
+
+JNIEXPORT jint JNICALL Java_kim_yt_ffmpegmc264_LibFFmpegMC264_ffmpegForceStop(JNIEnv *env, jobject instance)
+{
+    ytkim_ffmpeg_force_stop();
+}
+
+JNIEXPORT jint JNICALL Java_kim_yt_ffmpegmc264_LibFFmpegMC264_ffmpegRun(JNIEnv *env, jobject instance, jobjectArray args)
+{
+    int i = 0;
+    int argc = 0;
+    char **argv = NULL;
+    jstring *strr = NULL;
+
+    LOGI("Main started");
+
+    if (args != NULL) {
+        argc = (*env)->GetArrayLength(env, args);
+        argv = (char **) malloc(sizeof(char *) * argc);
+        strr = (jstring *) malloc(sizeof(jstring) * argc);
+
+        for (i = 0; i < argc; ++i) {
+            strr[i] = (jstring)(*env)->GetObjectArrayElement(env, args, i);
+            argv[i] = (char *)(*env)->GetStringUTFChars(env, strr[i], 0);
+        }
+    }
+
+    jint retcode = 0;
+    //retcode = main(argc, argv);
+    retcode = ytkim_ffmpeg_main(argc, argv);
+
+    LOGI("Main ended : retcode = %d", retcode);
+
+    for (i = 0; i < argc; ++i) {
+        (*env)->ReleaseStringUTFChars(env, strr[i], argv[i]);
+    }
+
+    free(argv);
+    free(strr);
+
+    return retcode;
+}
+
+
+
+
+
 JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_MC264Encoder_H264MediaCodecReady(JNIEnv *env, jobject obj)
 {
     jclass cls1 = (*env)->GetObjectClass(env, obj);

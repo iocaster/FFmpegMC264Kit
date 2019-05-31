@@ -117,15 +117,13 @@ public class MainActivity2 extends AppCompatActivity
         mCtx = this;
 
         /*
-         * request an android permission : WRITE_EXTERNAL_STORAGE
-         * It is required when to save the ffmpeg output into a file.
+         * request an android permissions : WRITE_EXTERNAL_STORAGE / RECORD_AUDIO
+         * It is required when to save the ffmpeg output into a file and to record MIC input.
          */
         ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.RECORD_AUDIO},
                 1337);
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.RECORD_AUDIO},
-                1338);
 
         //getDeviceScreenSize();
         ArrayAdapter<Resolution> arrayAdapter = new ArrayAdapter<Resolution>(
