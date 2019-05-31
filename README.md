@@ -2,12 +2,12 @@ FFmpegMC264Kit
 ===============
 
 FFmpegMC264Kit is a ffmpeg android library powered by MediaCodec HW accelated encoders.<br> 
-Now use 'mc264' / 'mcaac' instead of 'libx264' / 'aac' in runing ffmpeg command in your code.
+Now use both 'mc264' and 'mcaac' instead of 'libx264' / 'aac' in runing ffmpeg command in your code.
 
 FFmpegMC264 library doesn't call ffmpeg executable file through exec().
 Instead this library has embedded the ffmpeg as an API function.
 So, you can call the ffmpeg like this : 
-* int retcode = mMC264Encoder.ffmpegRun(cmdString);
+* int retcode = mLibFFmpegMC264.Run(cmdString);
   - cmdString example : 
   - ffmpeg -i INPUT -vcodec mc264 -acodec mcaac -f mp4 OUTPUT
   - ffmpeg -i INPUT -vcodec mc264 -b:v 2.0M -r 30 -g 15 -acodec ac3 -f mp4 OUTPUT
@@ -28,26 +28,23 @@ Enjoy ffmpeg powered by MediaCodec HW accelated encoder.
 ## The APIs you have to know : 
 
 ### prepare an instance
-* mMC264Encoder = new MC264Encoder();
-* mMC264Encoder.setYUVFrameListener(this, false);  - optional API
-* mMCAACEncoder = new MCAACEncoder();
+* mLibFFmpegMC264 = new LibFFmpegMC264();
+* mLibFFmpegMC264.getMC264Encoder().setYUVFrameListener(this, false);  - optional API
 
 ### prepare an AsyncTask
 * ffmpeg_task = new MyTask(this);
 * ffmpeg_task.execute( ffmpegCmdStringArray );
 
 ### run the instance in the task :: doInBackground()
-* mMC264Encoder.H264MediaCodecReady();
-* mMCAACEncoder.AACMediaCodecReady();
-* mMC264Encoder.ffmpegRun( strings );
+* mLibFFmpegMC264.Ready();
+* mLibFFmpegMC264.Run( strings );
 
 ### stop
-* mMC264Encoder.ffmpegStop();
-* mMC264Encoder.ffmpegForceStop(); - optional API to enforce stop
+* mLibFFmpegMC264.Stop();
+* mLibFFmpegMC264.ForceStop(); - optional API to enforce stop
 
 ### post stop
-* mMC264Encoder.reset();
-* mMCAACEncoder.reset();
+* mLibFFmpegMC264.Reset();
 
 
 ## Supported Color Format :
