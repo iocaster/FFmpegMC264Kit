@@ -19,8 +19,8 @@ So, you can call the ffmpeg like this :
   - generate TV test pattern : 
   - ffmpeg -f lavfi -i testsrc -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -r 30 -g 15 -an -f mp4 OUTPUT
  
-For this, in C side, an encoder module - mc264.c / mcaac.c - was added into ffmpeg libavcodec.<br>
-In java side, an encoder controller class - MC264Encoder.java / MCAACEncoder.java - was added over android MediaCodec (H.264 / AAC encoders only).
+For this, in C side, two encoder modules - mc264.c / mcaac.c - have been added into ffmpeg libavcodec.<br>
+In java side, two encoder controller classes - MC264Encoder.java / MCAACEncoder.java - have been added over android MediaCodec (H.264 / AAC encoders only).
 
 Enjoy ffmpeg powered by MediaCodec HW accelated encoder.
 
