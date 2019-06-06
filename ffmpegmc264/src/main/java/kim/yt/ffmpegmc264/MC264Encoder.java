@@ -64,10 +64,10 @@ public class MC264Encoder {
 //    private static final String DEBUG_FILE_NAME_BASE = "/sdcard/testencode.h264stream.raw.";
 //    private FileOutputStream outputStream = null;
 
-    public interface FrameEncodedListener {
-        void onFrameEncoded(byte[] data, int length, long presentationTimeUs, int b_keyframe);
-    }
-    private FrameEncodedListener listener;
+//    public interface FrameEncodedListener {
+//        void onFrameEncoded(byte[] data, int length, long presentationTimeUs, int b_keyframe);
+//    }
+//    private FrameEncodedListener listener;
 
 
     public interface YUVFrameListener {

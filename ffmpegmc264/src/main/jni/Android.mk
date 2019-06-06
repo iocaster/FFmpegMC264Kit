@@ -45,6 +45,7 @@ LOCAL_MODULE := ffmpeg_jni
 LOCAL_LDLIBS := -llog -ljnigraphics -lz -landroid -L$(LOCAL_PATH)/../jniLibs/$(APP_ABI) -lavutil-56 -lavfilter-7 -lswscale-5 -lavformat-58 -lavcodec-58 -lswresample-3 -lavdevice-58
 ANDROID_LIB := -landroid
 # LOCAL_CFLAGS := -I$(NDK)/sources/ffmpeg
+LOCAL_CFLAGS := -I$(LOCAL_PATH)/../jniLibs/$(APP_ABI)
 LOCAL_SRC_FILES :=  ffmpeg_jni.c ffmpeg.c ffmpeg_filter.c ffmpeg_opt.c cmdutils.c ffmpeg_cuvid.c ffmpeg_hw.c logjam.c
 LOCAL_SHARED_LIBRARIES := libavformat libavcodec libswscale libavutil libswresample libavfilter libavdevice
 include $(BUILD_SHARED_LIBRARY)
