@@ -253,10 +253,7 @@ public class MC264Encoder {
 
         mWidth = width;
         mHeight = height;
-        if( bitrate >= 2000000 )
-            mBitRate = 2000000; //bitrate;
-        else
-            mBitRate = bitrate;
+        mBitRate = bitrate;
         mFrameRate = framerate;
         mGOP = gop;
         //mEncoderColorFormat = colorformat;
