@@ -568,8 +568,16 @@ public class MCAACEncoder {
 //        mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, 44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, N*2);
 //        mAudioRecorder.startRecording();
 
-        /*MyMICAudio*/ myMICAudio = new MyMICAudio();
-        myMICAudio.start();
+        if( mEnableScreenGrabber ) {
+            /*MyMICAudio*/
+            myMICAudio = new MyMICAudio();
+            myMICAudio.start();
+        } else {
+            if( myMICAudio != null ) {
+                if( mAudioRecorder != null )
+                    mAudioRecorder.stop();
+            }
+        }
 
     }
 
@@ -580,7 +588,7 @@ public class MCAACEncoder {
 
         private MyMICAudio()
         {
-            //android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
+            //android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);    //moved into run()
 
             int N = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
             mAudioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, 44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, N*2);
@@ -592,7 +600,8 @@ public class MCAACEncoder {
 
         @Override
         public void run() {
-                mAudioRecorder.startRecording();
+            //android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
+            mAudioRecorder.startRecording();
         }
     }
 

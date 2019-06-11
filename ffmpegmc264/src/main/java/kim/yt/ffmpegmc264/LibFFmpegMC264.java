@@ -56,7 +56,7 @@ public class LibFFmpegMC264 {
     }
 
     public void enableMICCapture( boolean value ) {
-        mMCAACEncoder.enableScreenGrabber(true);
+        mMCAACEncoder.enableScreenGrabber(value);
     }
 
     public MC264Encoder getMC264Encoder() {

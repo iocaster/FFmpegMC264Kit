@@ -14,6 +14,7 @@ import android.hardware.display.VirtualDisplay;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.AsyncTask;
+import android.os.Process;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
@@ -101,8 +102,10 @@ public class MC264ScreenRecorder
 
         mLibFFmpeg = new LibFFmpegMC264();
         mLibFFmpeg.enableScreenCapture(true);
-        if(ENABLE_MIC_AUDIO)
-            mLibFFmpeg.enableMICCapture(true);
+
+//moved into includeMICCapture()
+//        if(ENABLE_MIC_AUDIO)
+//            mLibFFmpeg.enableMICCapture(true);
 
     }
 
@@ -261,6 +264,7 @@ public class MC264ScreenRecorder
 //            }
 //            ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
 
+            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
             mLibFFmpeg.Ready();
             ffmpeg_retcode = mLibFFmpeg.Run(strings);
 
@@ -308,10 +312,13 @@ public class MC264ScreenRecorder
     }
 
     public void includeMICCapture( boolean value ) {
-        if( value )
+        if( value ) {
             ENABLE_MIC_AUDIO = true;
-        else
+            mLibFFmpeg.enableMICCapture(true);
+        } else {
             ENABLE_MIC_AUDIO = false;
+            mLibFFmpeg.enableMICCapture(false);
+        }
     }
 
     public void setDst( String dstUrl ) {
