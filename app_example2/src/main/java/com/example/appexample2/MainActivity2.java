@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.os.Process;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
@@ -115,6 +116,9 @@ public class MainActivity2 extends AppCompatActivity
         setContentView(R.layout.media_projection);
 
         mCtx = this;
+
+        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
 
         /*
          * request an android permissions : WRITE_EXTERNAL_STORAGE / RECORD_AUDIO
