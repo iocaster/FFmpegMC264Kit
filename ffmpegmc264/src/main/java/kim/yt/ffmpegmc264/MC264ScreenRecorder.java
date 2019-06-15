@@ -264,15 +264,22 @@ public class MC264ScreenRecorder
 //            }
 //            ffmpeg_retcode = mMC264Encoder.ffmpegRun(strings);
 
-            int tid=android.os.Process.myTid();
-            Log.d(TAG,"--1> priority before change = " + android.os.Process.getThreadPriority(tid));
-            Log.d(TAG,"--1> priority before change = "+Thread.currentThread().getPriority());
+            int tid = android.os.Process.myTid();
+            if( android.os.Process.getThreadPriority(tid) != Process.THREAD_PRIORITY_URGENT_DISPLAY ) {
+                Log.d(TAG, "--1> doInBackground() : priority before change = " + android.os.Process.getThreadPriority(tid));
+                Log.d(TAG, "--1> doInBackground() : priority before change = " + Thread.currentThread().getPriority());
 
-            Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
+                try {
+                    Thread.currentThread().checkAccess();
+                    Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                    android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-            Log.d(TAG,"--2> priority after change = " + android.os.Process.getThreadPriority(tid));
-            Log.d(TAG,"--2> priority after change = " + Thread.currentThread().getPriority());
+                Log.d(TAG, "--2> doInBackground() : priority after change = " + android.os.Process.getThreadPriority(tid));
+                Log.d(TAG, "--2> doInBackground() : priority after change = " + Thread.currentThread().getPriority());
+            }
 
             mLibFFmpeg.Ready();
             ffmpeg_retcode = mLibFFmpeg.Run(strings);

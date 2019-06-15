@@ -23,6 +23,7 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Surface;
 
@@ -284,6 +285,7 @@ public class MC264Encoder {
         mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1 /*sec*/);    //KEY_I_FRAME_INTERVAL is not for GOP
         mediaFormat.setInteger(MediaFormat.KEY_INTRA_REFRESH_PERIOD, mGOP /*frames*/); //for low-delay and good error-resilience : Maybe this is for GOP
         mediaFormat.setInteger(MediaFormat.KEY_LATENCY, mGOP /*frames*/);               //What is this for?
+        mediaFormat.setInteger(MediaFormat.KEY_PRIORITY, 0);                    //0- real time, 1 - non-reaal time (beast effort)
         if( mStride > 0 ) {
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
                 mediaFormat.setInteger(MediaFormat.KEY_STRIDE, mStride );   //No effect on LG-Q6 although KEY_STRIDE requires API 23 and LG-Q6 is API 25.
@@ -376,6 +378,8 @@ public class MC264Encoder {
                 MediaFormat newFormat = encoder.getOutputFormat();
                 //if (VERBOSE)
                     Log.d(TAG, "encoder output format changed: " + newFormat);
+//                Log.i(TAG,"PPS: "+getParameterSetAsString(encoder, "csd-0"));
+//                Log.i(TAG,"SPS: "+getParameterSetAsString(encoder, "csd-1"));
             } else if (encoderStatus < 0) {
                 Log.e(TAG, "unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
             } else { // encoderStatus >= 0
@@ -486,6 +490,22 @@ public class MC264Encoder {
             } //last else
         } //if (!encoderDone)
     }
+
+//    private String getParameterSetAsString(MediaCodec encoder, String csd)
+//    {
+//        MediaFormat format = encoder.getOutputFormat();
+//        ByteBuffer ps = format.getByteBuffer(csd);
+//
+//        // The actual SPS and PPS byte codes
+//        byte[] new_ps = new byte[ps.capacity()-4];
+//        ps.position(4);
+//        ps.get(new_ps,0,new_ps.length);
+//
+//        Log.d(TAG, "new_ps = " + new_ps);
+//
+//        //Covert to String
+//        return Base64.encodeToString(new_ps, 0, new_ps.length, Base64.NO_WRAP);
+//    }
 
     private void captureH264MetaData(ByteBuffer encodedData, MediaCodec.BufferInfo bufferInfo) {
         mH264MetaSize = bufferInfo.size;

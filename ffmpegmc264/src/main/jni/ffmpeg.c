@@ -4817,6 +4817,14 @@ int ytkim_ffmpeg_main(int argc, char **argv)
     int i, ret;
     int64_t ti;
 
+    /* by ytkim */
+    int priority = getpriority(PRIO_PROCESS, 0);
+    if (priority > -15) {
+        int rc = setpriority(PRIO_PROCESS, 0, /*priority+increment)*/ -15);
+        int newpriority = getpriority(PRIO_PROCESS, 0);
+        LOGI("ytkim_ffmpeg_main() : priority(%d), new(%d), rc = %d", priority, newpriority, rc);
+    }
+
     /* by ytkim : --- begin --- init variables --- */
     /*static FILE * */vstats_file = NULL;
 
