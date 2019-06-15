@@ -317,6 +317,9 @@ public class MC264Encoder {
         setParameter( mWidth, mHeight, mBitRate, mFrameRate, mGOP, -1);
     }
 
+    private ByteBuffer encodedDataOld = null;
+    private long curPTS_Old = 0;
+
     public void putYUVFrameData(byte[] frameData, int stride, long pts, boolean flushOnly) {
 
         if( mStride <= 0 )
@@ -368,6 +371,16 @@ public class MC264Encoder {
                 // no output available yet
                 //if (VERBOSE)
                     Log.d(TAG, "no output from encoder available");
+
+                if( encodedDataOld != null ) {
+                    //long curPTS = ((info.presentationTimeUs - firstInfopresentationTimeUs));  //blocked because info.presentationTimeUs is not valid
+                    long curPTS = curPTS_Old + (1000000 / (long) mFrameRate);
+                    if (mEnableScreenGrabber) {
+                        onH264MediaCodecEncodedFrame2(encodedDataOld, info.size, curPTS /*mEncodedIndex++*/, /*b_keyframe*/0);
+                        curPTS_Old = curPTS;
+                    }
+                }
+
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                 // not expected for an encoder
                 //encoderOutputBuffers = encoder.getOutputBuffers();
@@ -380,6 +393,9 @@ public class MC264Encoder {
                     Log.d(TAG, "encoder output format changed: " + newFormat);
 //                Log.i(TAG,"PPS: "+getParameterSetAsString(encoder, "csd-0"));
 //                Log.i(TAG,"SPS: "+getParameterSetAsString(encoder, "csd-1"));
+
+                encodedDataOld = null;
+                firstInfopresentationTimeUs = 0;
             } else if (encoderStatus < 0) {
                 Log.e(TAG, "unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
             } else { // encoderStatus >= 0
@@ -441,6 +457,7 @@ public class MC264Encoder {
                                 firstInfopresentationTimeUs = info.presentationTimeUs;
                             }
                             /*long*/ curPTS = ((info.presentationTimeUs - firstInfopresentationTimeUs));
+                            curPTS_Old = curPTS;
                         }
 
                         if (b_keyframe == 1) {
@@ -474,6 +491,8 @@ public class MC264Encoder {
                                 //onH264MediaCodecEncodedFrame2(encodedData, info.size, /*info.presentationTimeUs*/mEncodedIndex++, /*b_keyframe*/0);
                                 onH264MediaCodecEncodedFrame2(encodedData, info.size, info.presentationTimeUs /*mEncodedIndex++*/, /*b_keyframe*/0);
                             }
+
+                            encodedDataOld = encodedData;
 
                             if( (mYUVFrameListener != null) && !mYUVFrameListenerKeyFrameOnly ) {
                                 mYUVFrameListener.onYUVFrame( frameData, (mStride > 0) ? mStride : mWidth, mHeight );
