@@ -12,6 +12,16 @@
 
 JavaVM *sVm = NULL;
 
+static jobject gobj0 = 0;    //LibFFmpegMC264.java
+static jclass gcls0 = 0;     //LibFFmpegMC264.java
+static jmethodID gmid0;      //LibFFmpegMC264.java :: setDuration(...)
+JNIEnv *genv0;
+
+static jobject gobj0_1 = 0;    //LibFFmpegMC264.java
+static jclass gcls0_1 = 0;     //LibFFmpegMC264.java
+static jmethodID gmid0_1;      //LibFFmpegMC264.java :: setCurrentPosition(...)
+JNIEnv *genv0_1;
+
 static jobject gobj = 0;    //MC264Encoder.java
 static jclass gcls = 0;     //MC264Encoder.java
 static jmethodID gmid;      //MC264Encoder.java :: void putYUVFrameData( byte[] frameData, long pts, boolean flushOnly )
@@ -37,15 +47,50 @@ static char app_name[] = "ffmpeg_jni";
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     sVm = vm;
-    start_logger( /*"ffmpeg_jni"*/ app_name );
+    //start_logger( /*"ffmpeg_jni"*/ app_name );
     return JNI_VERSION_1_6;
 }
 
 JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_MC264Encoder_H264MediaCodecReady(JNIEnv *env, jobject obj);
 JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_MCAACEncoder_AACMediaCodecReady(JNIEnv *env, jobject obj);
 
+static void durationReady(JNIEnv *env, jobject obj)
+{
+    jclass cls1 = (*env)->GetObjectClass(env, obj);
+    if (cls1 == 0) {
+        /* error */
+    }
+    gcls0 = (*env)->NewGlobalRef(env, cls1);
+    if (gcls0 == 0) {
+        /* error */
+    }
+
+    gobj0 = (*env)->NewGlobalRef(env, obj);
+    gmid0 = (*env)->GetMethodID(env, gcls0, "setDuration", "(IIII)V");
+    genv0 = env;
+}
+
+static void currentPositionReady(JNIEnv *env, jobject obj)
+{
+    jclass cls1 = (*env)->GetObjectClass(env, obj);
+    if (cls1 == 0) {
+        /* error */
+    }
+    gcls0_1 = (*env)->NewGlobalRef(env, cls1);
+    if (gcls0_1 == 0) {
+        /* error */
+    }
+
+    gobj0_1 = (*env)->NewGlobalRef(env, obj);
+    gmid0_1 = (*env)->GetMethodID(env, gcls0_1, "setCurrentPosition", "(IIII)V");
+    genv0_1 = env;
+}
+
 JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_LibFFmpegMC264_FFmpegReady(JNIEnv *env, jobject obj)
 {
+    durationReady(env, obj);
+    currentPositionReady(env, obj);
+
     jclass cls = (*env)->GetObjectClass(env, obj);
 
     jfieldID  fid = (*env)->GetFieldID(env, cls, "mMC264Encoder", "Lkim/yt/ffmpegmc264/MC264Encoder;");
@@ -258,6 +303,38 @@ int mediacodecAAC_release(void)
     } else {
         /* not yet prepared ... */
         LOGE("ffmpeg_jni.c : mediacodecAAC_release() : gcls2 & gobj2 are not yet prepared !!!");
+        return -1;
+    }
+}
+
+int sendDurationToJava( int hour, int min, int sec, int msec )
+{
+    LOGD("sendDurationToJava() : hour=%d min=%d sec=%d msec=%d\n",
+         hour, min, sec, msec );
+
+    if( gcls0 && gobj0 ) {
+        //call void setDuration(int hour, int min, int sec, int msec)
+        (*genv0)->CallVoidMethod(genv0, gobj0, gmid0, hour, min, sec, msec );
+        return 0;
+    } else {
+        /* not yet prepared ... */
+        LOGE("sendDurationToJava() : gcls0 & gobj0 are not yet prepared !!!");
+        return -1;
+    }
+}
+
+int sendCurrentPositionToJava( int hour, int min, int sec, int msec )
+{
+    LOGD("sendCurrentPositionToJava() : hour=%d min=%d sec=%d msec=%d\n",
+         hour, min, sec, msec );
+
+    if( gcls0_1 && gobj0_1 ) {
+        //call void setDuration(int hour, int min, int sec, int msec)
+        (*genv0)->CallVoidMethod(genv0_1, gobj0_1, gmid0_1, hour, min, sec, msec );
+        return 0;
+    } else {
+        /* not yet prepared ... */
+        LOGE("sendCurrentPositionToJava() : gcls0_1 & gobj0_1 are not yet prepared !!!");
         return -1;
     }
 }

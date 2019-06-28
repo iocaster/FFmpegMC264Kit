@@ -1637,6 +1637,8 @@ static void print_final_stats(int64_t total_size)
     }
 }
 
+extern int sendCurrentPositionToJava( int hour, int min, int sec, int msec );
+
 static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time)
 {
     AVBPrint buf, buf_script;
@@ -1771,6 +1773,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     } else {
         av_bprintf(&buf, "%s%02d:%02d:%02d.%02d ",
                    hours_sign, hours, mins, secs, (100 * us) / AV_TIME_BASE);
+        sendCurrentPositionToJava(hours, mins, secs, (100*us) );
     }
 
     if (bitrate < 0) {
@@ -4760,6 +4763,8 @@ static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
 {
 }
 
+extern int sendDurationToJava( int hour, int min, int sec, int msec );  //ffmpeg_jni.c
+
 #include "logjam.h"
 static void android_log_callback(void *ptr, int level, const char *fmt, va_list vl)
 {
@@ -4769,6 +4774,50 @@ static void android_log_callback(void *ptr, int level, const char *fmt, va_list 
     char outbuf[4096];
     memset(outbuf, sizeof(outbuf), 0x0);
     vsnprintf(outbuf, sizeof(outbuf)-1, fmt, vl);
+
+    /*
+     * parse duration info of media file :
+     *  Duration: 00:00:20.20, start: 0.000000, bitrate: 360 kb/s
+     *  or :
+     *       Duration:
+     *       00:00:21.23
+     *       , start:
+     *       0.000000
+     *       , bitrate:
+     *       17494 kb/s
+     */
+    static int do_parse_duration = 0;
+    int hour = 0;
+    int min = 0;
+    int sec = 0;
+    int msec = 0;
+    char *pt = NULL;
+    if( pt = strstr(outbuf, "Duration: ") ) {
+        //parse single line duration
+        do_parse_duration = 1;
+        char key[16];
+        sscanf( pt, "%s %02d:%02d:%02d.%02d", &key, &hour, &min, &sec, &msec);
+        LOGI("key=[%s]", key);
+        char tmpbuf[256];
+        sprintf( tmpbuf, "--> parsed Duration: %02d:%02d:%02d.%02d", hour, min, sec, msec );
+        LOGI("%s", tmpbuf);
+    } else if( do_parse_duration ) {
+        //parse two line duration
+        do_parse_duration = 0;
+        pt = strstr(outbuf, ":");
+        sscanf( pt-2, "%02d:%02d:%02d.%02d", &hour, &min, &sec, &msec);
+        char tmpbuf[256];
+        sprintf( tmpbuf, "--> parsed Duration: %02d:%02d:%02d.%02d", hour, min, sec, msec );
+        LOGI("%s", tmpbuf);
+    }
+
+    if( sec || min || hour ) {
+        //duration found
+        char tmpbuf[256];
+        sprintf( tmpbuf, "--> parsed final Duration: %02d:%02d:%02d.%02d", hour, min, sec, msec );
+        LOGI("%s", tmpbuf);
+        sendDurationToJava(hour, min, sec, msec);
+    }
 
     switch(level) {
         case AV_LOG_DEBUG:
