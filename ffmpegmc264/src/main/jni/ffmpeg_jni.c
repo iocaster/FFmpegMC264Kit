@@ -66,7 +66,7 @@ static void durationReady(JNIEnv *env, jobject obj)
     }
 
     gobj0 = (*env)->NewGlobalRef(env, obj);
-    gmid0 = (*env)->GetMethodID(env, gcls0, "setDuration", "(IIII)V");
+    gmid0 = (*env)->GetMethodID(env, gcls0, "onSetDuration", "(IIII)V");
     genv0 = env;
 }
 
@@ -82,7 +82,7 @@ static void currentPositionReady(JNIEnv *env, jobject obj)
     }
 
     gobj0_1 = (*env)->NewGlobalRef(env, obj);
-    gmid0_1 = (*env)->GetMethodID(env, gcls0_1, "setCurrentPosition", "(IIII)V");
+    gmid0_1 = (*env)->GetMethodID(env, gcls0_1, "onSetCurrentPosition", "(IIII)V");
     genv0_1 = env;
 }
 

@@ -92,7 +92,7 @@ public class LibFFmpegMC264 {
     /*
      * setDuration(...) is called by jni
      */
-    public void setDuration(int hour, int min, int sec, int msec) {
+    public void onSetDuration(int hour, int min, int sec, int msec) {
         mHour = hour;
         mMin = min;
         mSec = sec;
@@ -102,7 +102,7 @@ public class LibFFmpegMC264 {
     /*
      * setCurrentPosition(...) is called by jni
      */
-    public void setCurrentPosition(int hour, int min, int sec, int msec) {
+    public void onSetCurrentPosition(int hour, int min, int sec, int msec) {
         mCurHour = hour;
         mCurMin = min;
         mCurSec = sec;
