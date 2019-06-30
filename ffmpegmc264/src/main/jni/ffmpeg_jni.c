@@ -14,13 +14,18 @@ JavaVM *sVm = NULL;
 
 static jobject gobj0 = 0;    //LibFFmpegMC264.java
 static jclass gcls0 = 0;     //LibFFmpegMC264.java
-static jmethodID gmid0;      //LibFFmpegMC264.java :: setDuration(...)
+static jmethodID gmid0;      //LibFFmpegMC264.java :: onSetDuration(...)
 JNIEnv *genv0;
 
 static jobject gobj0_1 = 0;    //LibFFmpegMC264.java
 static jclass gcls0_1 = 0;     //LibFFmpegMC264.java
-static jmethodID gmid0_1;      //LibFFmpegMC264.java :: setCurrentPosition(...)
+static jmethodID gmid0_1;      //LibFFmpegMC264.java :: onSetCurrentPosition(...)
 JNIEnv *genv0_1;
+
+static jobject gobj0_2 = 0;    //LibFFmpegMC264.java
+static jclass gcls0_2 = 0;     //LibFFmpegMC264.java
+static jmethodID gmid0_2;      //LibFFmpegMC264.java :: onSetVideoInfo(...)
+JNIEnv *genv0_2;
 
 static jobject gobj = 0;    //MC264Encoder.java
 static jclass gcls = 0;     //MC264Encoder.java
@@ -86,10 +91,27 @@ static void currentPositionReady(JNIEnv *env, jobject obj)
     genv0_1 = env;
 }
 
+static void videoInfoReady(JNIEnv *env, jobject obj)
+{
+    jclass cls1 = (*env)->GetObjectClass(env, obj);
+    if (cls1 == 0) {
+        /* error */
+    }
+    gcls0_2 = (*env)->NewGlobalRef(env, cls1);
+    if (gcls0_2 == 0) {
+        /* error */
+    }
+
+    gobj0_2 = (*env)->NewGlobalRef(env, obj);
+    gmid0_2 = (*env)->GetMethodID(env, gcls0_2, "onSetVideoInfo", "(IIIF)V");
+    genv0_2 = env;
+}
+
 JNIEXPORT void JNICALL Java_kim_yt_ffmpegmc264_LibFFmpegMC264_FFmpegReady(JNIEnv *env, jobject obj)
 {
     durationReady(env, obj);
     currentPositionReady(env, obj);
+    videoInfoReady(env, obj);
 
     jclass cls = (*env)->GetObjectClass(env, obj);
 
@@ -330,11 +352,27 @@ int sendCurrentPositionToJava( int hour, int min, int sec, int msec )
 
     if( gcls0_1 && gobj0_1 ) {
         //call void setDuration(int hour, int min, int sec, int msec)
-        (*genv0)->CallVoidMethod(genv0_1, gobj0_1, gmid0_1, hour, min, sec, msec );
+        (*genv0_1)->CallVoidMethod(genv0_1, gobj0_1, gmid0_1, hour, min, sec, msec );
         return 0;
     } else {
         /* not yet prepared ... */
         LOGE("sendCurrentPositionToJava() : gcls0_1 & gobj0_1 are not yet prepared !!!");
+        return -1;
+    }
+}
+
+int sendVideoInfoToJava( int width, int height, int rotate, float bps )
+{
+    LOGD("sendVideoInfoToJava() : width=%d height=%d rotate=%d bps=%f\n",
+         width, height, rotate, bps );
+
+    if( gcls0_2 && gobj0_2 ) {
+        //call void setDuration(int hour, int min, int sec, int msec)
+        (*genv0_2)->CallVoidMethod(genv0_2, gobj0_2, gmid0_2, width, height, rotate, bps );
+        return 0;
+    } else {
+        /* not yet prepared ... */
+        LOGE("sendVideoInfoToJava() : gcls0_2 & gobj0_2 are not yet prepared !!!");
         return -1;
     }
 }

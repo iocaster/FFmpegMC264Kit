@@ -4763,7 +4763,9 @@ static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
 {
 }
 
-extern int sendDurationToJava( int hour, int min, int sec, int msec );  //ffmpeg_jni.c
+extern int sendDurationToJava( int hour, int min, int sec, int msec );              //ffmpeg_jni.c
+extern int sendVideoInfoToJava( int width, int height, int rotation, float bps );   //ffmpeg_jni.c
+static void parseVideoInfo( char *istr );
 
 #include "logjam.h"
 static void android_log_callback(void *ptr, int level, const char *fmt, va_list vl)
@@ -4819,6 +4821,17 @@ static void android_log_callback(void *ptr, int level, const char *fmt, va_list 
         sendDurationToJava(hour, min, sec, msec);
     }
 
+    /*
+     * Stream #0:0(eng): Video: h264 (High) (avc1 / 0x31637661), yuvj420p(pc, smpte170m), 1920x1080, 17186 kb/s, SAR 1:1 DAR 16:9, 30.01 fps, 30 tbr, 90k tbn, 180k tbc (default)
+     * Metadata:
+     *   rotate          : 90
+     *
+     * parse ": Video:" & "rotate          :"
+     *
+     */
+    parseVideoInfo( outbuf );
+
+
     switch(level) {
         case AV_LOG_DEBUG:
             LOGD("%s", outbuf);
@@ -4843,6 +4856,79 @@ static void android_log_callback(void *ptr, int level, const char *fmt, va_list 
             LOGW("%s", outbuf);
             break;
     }
+}
+
+static int isResolution( char *pInfo )
+{
+    LOGD( "isResolution() : pInfo = [%s]", pInfo);
+
+    int base = 1;   //skip the leading white space : Ex) " 640x360" or " 1920x1080"
+
+    if( pInfo[base+3] != 'x' && pInfo[base+4] != 'x' ) return 0;
+
+    if( pInfo[base+3] == 'x' && pInfo[base+4] != 'x') {
+        if (!isdigit(pInfo[base+(3-1)])) return 0;
+    } else if( pInfo[base+3] != 'x' && pInfo[base+4] == 'x' ) {
+        if (!isdigit(pInfo[base+(4 - 1)])) return 0;
+    }
+
+    LOGD( "isResolution() : pInfo = [%s] is resolution !!!", pInfo);
+    return 1;
+}
+
+static void parseResolution( int cnt, char* pvinfos[], int *pwidth, int *pheight )
+{
+    LOGD( "parseResolution() : Enter... cnt= %d", cnt );
+    for( int k=0; k<cnt; k++ ) {
+        if (isResolution(pvinfos[k])) {
+            sscanf(pvinfos[k], " %dx%d", pwidth, pheight);
+            LOGI("--> parsed width x height = %d x %d", *pwidth, *pheight);
+        }
+    }
+}
+static void parseBps( int cnt, char *pvinfos[], int *pBps )
+{
+    for( int k=0; k<cnt; k++ ) {
+        if ( strstr(pvinfos[k], "kb/s") ) {
+            sscanf(pvinfos[k], " %d kb/s", pBps);
+            LOGI("--> parsed bps = %d", *pBps);
+        }
+    }
+}
+static void parseVideoInfo( char *istr )
+{
+    static int do_parse_rotate= 0;
+    static int width, height, bps, rotate;
+
+    char ostr[4096];
+    strcpy( ostr, istr );
+
+    char *pvinfos[20];
+    if( strstr(ostr, ": Video:") ) {
+        LOGI( "--> parsed ': Video:'");
+        int i = 0;
+        char *ptok = strtok(ostr, ",");
+        while( ptok != NULL ) {
+            pvinfos[i] = ptok;
+            LOGI( "--> parsed pvinfos[i] = %s", pvinfos[i] );
+            ptok = strtok(NULL, ",");
+            i++;
+        }
+        pvinfos[i] = NULL;
+
+        parseResolution( /*cnt*/ i, pvinfos, &width, &height );
+        parseBps( /*cnt*/ i, pvinfos, &bps );
+
+        sendVideoInfoToJava(width, height, -1, (float)bps);
+    } else if( strstr(ostr, "rotate          :") ) {
+        do_parse_rotate = 1;
+    } else if( do_parse_rotate ) {
+        do_parse_rotate = 0;
+        int rotate;
+        sscanf( istr, "%d", &rotate );
+        sendVideoInfoToJava(-1, -1, rotate, (float)-1.0);
+    }
+
 }
 
 void ytkim_ffmpeg_stop()

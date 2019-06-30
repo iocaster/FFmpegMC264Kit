@@ -25,6 +25,9 @@ public class LibFFmpegMC264 {
 
     private int mHour, mMin, mSec, mMSec;                //for media duration
     private int mCurHour, mCurMin, mCurSec, mCurMSec;   //for current position
+    private int mWidth, mHeight, mRotate;
+    private float mBps;
+
 
     public LibFFmpegMC264() {
         mMC264Encoder = new MC264Encoder();
@@ -50,6 +53,22 @@ public class LibFFmpegMC264 {
     public Duration getCurrentDuration() {
         return new Duration(mCurHour, mCurMin, mCurSec, mCurMSec);
     }
+
+    public static class VideoInfo {
+        public int width, height, rotate;
+        public float bps;
+
+        VideoInfo( int width, int height, int rotate, float bps ) {
+            this.width = width;
+            this.height = height;
+            this.rotate = rotate;
+            this.bps = bps;
+        }
+    }
+    public VideoInfo getVideoInfo() {
+        return new VideoInfo(mWidth, mHeight, mRotate, mBps);
+    }
+
 
     public void Ready() {
         mHour = 0;         mMin = 0;         mSec = 0;         mMSec = 0;
@@ -90,7 +109,7 @@ public class LibFFmpegMC264 {
     }
 
     /*
-     * setDuration(...) is called by jni
+     * onSetDuration(...) is called by jni
      */
     public void onSetDuration(int hour, int min, int sec, int msec) {
         mHour = hour;
@@ -100,12 +119,22 @@ public class LibFFmpegMC264 {
     }
 
     /*
-     * setCurrentPosition(...) is called by jni
+     * onSetCurrentPosition(...) is called by jni
      */
     public void onSetCurrentPosition(int hour, int min, int sec, int msec) {
         mCurHour = hour;
         mCurMin = min;
         mCurSec = sec;
         mCurMSec = msec;
+    }
+
+    /*
+     * onSetVideoInfo(...) is called by jni
+     */
+    public void onSetVideoInfo(int width, int height, int rotate, float bps) {
+        if( width > 0 ) { mWidth = width; mRotate = 0; }
+        if( height > 0 ) mHeight = height;
+        if( rotate > 0 )  mRotate = rotate;
+        if( bps > 0 ) mBps = bps;
     }
 }
