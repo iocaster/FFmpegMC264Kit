@@ -28,8 +28,11 @@ import android.util.Log;
 import android.view.Surface;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
+import static java.util.Arrays.copyOf;
 
 public class MC264Encoder {
 //    static {
@@ -320,7 +323,9 @@ public class MC264Encoder {
     private ByteBuffer encodedDataOld = null;
     private long curPTS_Old = 0;
 
-    public void putYUVFrameData(byte[] frameData, int stride, long pts, boolean flushOnly) {
+    public void putYUVFrameData(byte[] iframeData, int stride, long pts, boolean flushOnly) {
+
+        byte[] frameData = iframeData;
 
         if( mStride <= 0 )
             setStride( stride );
@@ -328,6 +333,11 @@ public class MC264Encoder {
         final int TIMEOUT_USEC = 8000;
         final int TIMEOUT_USEC2 = 10000;
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+
+        if( mEncoderColorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar ) {
+            //for SAMSUNG Galaxy Note-10
+            frameData = convertYUV420SemiPlanarToYUV420Planar(iframeData, stride);
+        }
 
         /*
          * feed frame data
@@ -508,6 +518,44 @@ public class MC264Encoder {
 //                } while( !encoderDone && (encoderStatus >= 0) ); //while
             } //last else
         } //if (!encoderDone)
+    }
+
+    private byte[] convertYUV420SemiPlanarToYUV420Planar(byte[] iframeData, int stride) {
+//        Log.d(TAG, "--> convertYUV420SemiPlanarToYUV420Planar() : Enter... iframeData.length = "
+//                + iframeData.length + ", stride = " + stride + ", mWidth x mHeight = "
+//                + mWidth + " x " + mHeight );
+
+        byte[] newFrameData = new byte[iframeData.length];
+
+        //YUV420 planar         : [Y1Y2......][Cb1Cb2......][Cr1Cr2.......]
+        //YUV420 semi planar    : [Y1Y2......][Cb1Cr1Cb2Cr2......]              == iframeData
+        //YUV422 interleaved    : Y1U1Y2V1 Y3U2Y4V2 ... ...
+
+        byte[] Y = Arrays.copyOf(iframeData, stride*mHeight);
+        byte[] U = new byte[stride*mHeight/2];
+        byte[] V = new byte[stride*mHeight/2];
+        int pos = 0;
+        for( int i=0; i<stride*mHeight/2; i+=2 ) {  //stride/2 안하는 대신 i=+2
+            int upos = i;
+            int vpos = i+1;
+            //Log.d(TAG, "--> i = " + i + ", upos / vpos = " + upos + " / " + vpos );
+            U[pos] = iframeData[ stride*mHeight + upos ];
+            V[pos] = iframeData[ stride*mHeight + vpos ];
+            pos++;
+        }
+
+        for (int i = 0; i < stride*mHeight; i++)
+        {
+            newFrameData[i] = Y[i];
+        }
+
+        for (int i = 0; i < stride/2*mHeight/2; i++)
+        {
+            newFrameData[stride*mHeight + i] = U[i];
+            newFrameData[stride*mHeight + stride/2*mHeight/2 + i] = V[i];
+        }
+
+        return newFrameData;
     }
 
 //    private String getParameterSetAsString(MediaCodec encoder, String csd)
