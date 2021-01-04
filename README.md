@@ -11,14 +11,12 @@ And one java utility class - MC264ScreenRecorder.java - which can cast/save andr
 
 ## Supported Color Format :
 * mc264 YUV Input : yuv420p only
-* MediaCodec YUV Input : YV12 [NV12] only (MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar)
+* MediaCodec YUV Input : <br>
+NV12 (MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar), <br>
+YV12 (MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar)
 
 Therefor the INPUT stream of ffmpeg should have the color format of YUV420Planar. Or use '-pix_fmt yuv420p' option with INPUT.<br>
 The MediaCodec of your device should have the color format YV12 [NV12]. (Other formats will be supported later)
-
-## Limitations :
-* The running time of this library is limited to 30 minutes. <br>
-  Please, mail me for the unlimited version of FFmpegMC264 module including the full source code of ffmpeg.
 
 
 
