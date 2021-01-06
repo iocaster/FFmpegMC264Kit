@@ -144,17 +144,17 @@ public class MC264ScreenRecorder
         String fullUrl;
         if( mLandscapeMode ) {
             if( !ENABLE_MIC_AUDIO )
-                fullUrl = new String("ffmpeg -probesize 32 -f lavfi -re -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vcodec mc264 -b:v 2.0M -s "
+                fullUrl = new String("ffmpeg -probesize 32 -f lavfi -re -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vcodec mc264 -b:v 4.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr );
             else
-                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 2 -f lavfi -re -i sine=frequency=1000:sample_rate=44100 -f lavfi -re -i rgbtestsrc=size=160x120:rate=15 -pix_fmt yuv420p -map 1:v -map 0:a -vcodec mc264 -b:v 2.0M -s "
+                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 2 -f lavfi -re -i sine=frequency=1000:sample_rate=44100 -f lavfi -re -i rgbtestsrc=size=160x120:rate=15 -pix_fmt yuv420p -map 1:v -map 0:a -vcodec mc264 -b:v 4.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -acodec mcaac " + capDstStr );
         } else { //rotate for HomeScreen Mode
             if( !ENABLE_MIC_AUDIO )
-                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 2 -f lavfi -re -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vf transpose=1 -vcodec mc264 -b:v 2.0M -s "
+                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 2 -f lavfi -re -i rgbtestsrc=size=160x120:rate=30 -pix_fmt yuv420p -vf transpose=1 -vcodec mc264 -b:v 4.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -an " + capDstStr);
             else
-                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 3 -f lavfi -re -i sine=frequency=1:sample_rate=44100 -f lavfi -re -i rgbtestsrc=size=160x120:rate=15 -pix_fmt yuv420p -vf transpose=1 -map 1:v -map 0:a -vcodec mc264 -b:v 2.0M -s "
+                fullUrl = new String("ffmpeg -probesize 32 -filter_complex_threads 3 -f lavfi -re -i sine=frequency=1:sample_rate=44100 -f lavfi -re -i rgbtestsrc=size=160x120:rate=15 -pix_fmt yuv420p -vf transpose=1 -map 1:v -map 0:a -vcodec mc264 -b:v 4.0M -s "
                     + mDisplayWidth + "x" + mDisplayHeight + " -acodec mcaac " + capDstStr);
         }
         Log.d( TAG, "URL = " + fullUrl );
@@ -191,6 +191,21 @@ public class MC264ScreenRecorder
             stopCapture();      //stop ffmpeg
             return;
         }
+        mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
+        mMediaProjection.registerCallback(new MediaProjectionCallback(), null);
+        mVirtualDisplay = createVirtualDisplay();
+        callCallbackStart();
+    }
+
+    //alternative function of onActivityResult() above
+    public void startProjection(int resultCode, Intent data) {
+        if (resultCode != RESULT_OK) {
+            Log.e(TAG,"startProjection() : User denied screen sharing permission");
+            //callCallbackStop(-1);
+            stopCapture();      //stop ffmpeg
+            return;
+        }
+        Log.d(TAG, "---> startProjection() ..." );
         mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
         mMediaProjection.registerCallback(new MediaProjectionCallback(), null);
         mVirtualDisplay = createVirtualDisplay();
@@ -355,6 +370,22 @@ public class MC264ScreenRecorder
 
         startCapture();     //start ffmpeg : should be called before shareScreen();
         shareScreen();
+    }
+
+    public void startFFMpegOnly() {
+        if( mDisplayWidth <= 0 || mDisplayHeight <= 0 ) {
+            Log.e(TAG, "Error, Capture size isn't set yet !!!");
+            callCallbackStop(-1);
+            return;
+        }
+        if( mDstUrl == null ) {
+            Log.e(TAG, "Error, Capture DST isn't set yet, where record or stream to !!!");
+            callCallbackStop(-1);
+            return;
+        }
+
+        startCapture();     //start ffmpeg : should be called before shareScreen();
+        //shareScreen();
     }
 
     public void start( int width, int height, String dstUrl ) {
