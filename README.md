@@ -25,6 +25,9 @@ The MediaCodec of your device should have the color format YV12 [NV12]. (Other f
   <img src="./FFmpegMC264_CalssDiagram.jpg">
 </p>
 
+## FFMeg source code for mc264/mcaac codecs is here :
+https://github.com/iocaster/ffmpeg-4.0.mc264
+
 
 ## Referenced Links :
 * MediaCodec example :
